@@ -1,0 +1,120 @@
+:root {
+  --color-bg: #05070d;
+  --color-text: #eef0ff;
+  --color-accent-cyan: #67e8f9;
+  --color-accent-purple: #a78bfa;
+  --color-muted: #8d97c2;
+  --font-base: -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-base);
+  min-height: 100vh;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.site-header .brand {
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.site-nav a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.site-nav a:hover,
+.site-nav a.active {
+  color: var(--color-accent-cyan);
+}
+
+main {
+  position: relative;
+  z-index: 10;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.hero {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero h1 {
+  font-size: 2.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.hero .tagline {
+  color: var(--color-accent-purple);
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.page-title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.work-card {
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: rgba(20, 24, 50, 0.4);
+}
+
+.placeholder-card {
+  border-style: dashed;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.contact-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.contact-list a {
+  color: var(--color-accent-cyan);
+  text-decoration: none;
+}
