@@ -67,6 +67,17 @@ test('shader variants emit GLSL ES 3 with compile-time noise and trail bounds', 
   assert.doesNotMatch(createFragmentShaderSource({ octaves: NaN, splatCount: Infinity }), /NaN|Infinity/);
 });
 
+test('cloud band squares its signed offset without undefined negative-base GLSL pow', () => {
+  for (const [octaves, splatCount] of [[4, 12], [3, 8], [2, 4]]) {
+    const source = createFragmentShaderSource({ octaves, splatCount });
+    const cloudBand = source.match(/float\s+cloudBand\s*=\s*([^;]+);/)?.[1];
+    assert.ok(cloudBand, 'shader must define its cloud band');
+    assert.doesNotMatch(cloudBand, /\bpow\s*\(/, 'signed band offsets cannot be passed to GLSL pow');
+    assert.match(source, /float\s+band\s*=\s*\(uv\.y\s*-\s*0\.45\s*-\s*sin\(uv\.x\s*\*\s*5\.0\)\s*\*\s*0\.10\)\s*\*\s*2\.6\s*;/);
+    assert.match(cloudBand, /^exp\(\s*-\s*\(\s*band\s*\*\s*band\s*\)\s*\)$/);
+  }
+});
+
 test('pointer trail is bounded, normalized, and fully decays at its deadline', () => {
   const trail = createPointerTrail({ limit: 2, decayMs: 2500 });
   trail.push({ x: 0, y: 0, strength: 1 }, 0);

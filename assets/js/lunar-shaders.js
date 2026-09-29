@@ -92,7 +92,8 @@ void main() {
   float distant = fbm(p * 2.7 + warp * 1.8 + drift);
   float middle = fbm(p * 4.4 + warp * 2.5 - drift * 0.7);
   float foreground = fbm(p * 7.2 + warp * 3.1 + drift * 0.4);
-  float cloudBand = exp(-pow((uv.y - 0.45 - sin(uv.x * 5.0) * 0.10) * 2.6, 2.0));
+  float band = (uv.y - 0.45 - sin(uv.x * 5.0) * 0.10) * 2.6;
+  float cloudBand = exp(-(band * band));
   float density = smoothstep(0.28, 0.76, distant * 0.35 + middle * 0.50 + foreground * 0.15);
   density = clamp(density + trailLight * uPreset.y * 0.18, 0.0, 1.0);
   float readability = smoothstep(0.27, 0.65, uv.x);
