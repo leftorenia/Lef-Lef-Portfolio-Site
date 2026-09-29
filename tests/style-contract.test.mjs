@@ -12,11 +12,10 @@ function rule(selector) {
   return new RegExp(`${escaped}[^\\{]*\\{[^}]+\\}`, 's');
 }
 
-test('style contract uses the approved local cosmic palette', () => {
-  assert.match(css, /--color-bg:\s*#050509/i);
-  assert.match(css, /--color-violet:/i);
-  assert.match(css, /--color-blue:/i);
-  assert.match(css, /--color-ice:/i);
+test('style contract uses the approved Lunar Reverie palette', () => {
+  for (const color of ['#030815', '#08152d', '#284d86', '#6d91c9', '#bed6f6', '#eef4ff']) {
+    assert.match(css, new RegExp(color, 'i'));
+  }
   assert.match(css, /--font-display:/i);
   assert.match(css, /--font-mono:/i);
   assert.doesNotMatch(css, /url\(["']?https?:\/\//i);
@@ -31,16 +30,22 @@ test('style contract includes every page layout hook', () => {
     '.contact-links',
     '.skip-link',
     '.static-nebula',
+    '.lunar-fallback',
+    '.hero-status',
+    '.sound-toggle',
+    '.hero-moon-note',
   ]) {
     assert.match(css, rule(selector), `missing CSS rule for ${selector}`);
   }
 
   assert.match(css, /\.work-preview[^\{]*\{[^}]*aspect-ratio:/s);
-  assert.match(css, /#cosmic-field[^\{]*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /#lunar-field[^\{]*\{[^}]*pointer-events:\s*none/s);
 });
 
-test('style contract centers the masthead and generated Profile emblem', () => {
-  assert.match(css, /\.site-header[^\{]*\{[^}]*flex-direction:\s*column/s);
+test('style contract uses a one-row masthead and generated Profile emblem', () => {
+  assert.match(css, /\.site-header[^\{]*\{[^}]*flex-direction:\s*row/s);
+  assert.match(css, /\.site-header[^\{]*\{[^}]*justify-content:\s*space-between/s);
+  assert.match(css, /\.hero[^\{]*\{[^}]*grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(0,\s*3fr\)/s);
   assert.match(css, /\.profile-emblem[^\{]*\{[^}]*aspect-ratio:\s*1/s);
   assert.match(css, /\.profile-emblem-mark[^\{]*\{[^}]*place-items:\s*center/s);
 });

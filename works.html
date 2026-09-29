@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="れふれふによるShader・リアルタイムVFXの制作と表現研究。">
-  <meta name="theme-color" content="#050509">
+  <meta name="theme-color" content="#030815">
   <title>WORKS — れふれふ</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body data-page="works">
   <a class="skip-link" href="#main-content">本文へ移動</a>
-  <div class="static-nebula" aria-hidden="true"></div>
+  <canvas id="lunar-field" aria-hidden="true"></canvas>
+  <div class="static-nebula lunar-fallback" aria-hidden="true"></div>
 
   <header class="site-header">
     <a class="brand" href="index.html" aria-label="れふれふ Profile">
@@ -25,6 +26,10 @@
   </header>
 
   <main id="main-content" class="page-shell works-page">
+    <div class="page-sound sound-control">
+      <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false">SOUND OFF</button>
+      <span>Ambient sound is optional</span>
+    </div>
     <header class="page-heading">
       <p class="section-index"><span>02</span> FIELD 02</p>
       <p class="eyebrow">SELECTED EXPERIMENT</p>
@@ -135,7 +140,8 @@
     <span>© 2026 LEFLEF</span>
     <span>SHADER / VFX EXPLORATION</span>
   </footer>
-  <script type="module" src="assets/js/cosmic-field.js"></script>
+  <script type="module" src="assets/js/lunar-field.js"></script>
+  <script type="module" src="assets/js/ambient-sound.js"></script>
   <script type="module" src="assets/js/work-preview.js"></script>
 </body>
 </html>

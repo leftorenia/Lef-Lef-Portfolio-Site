@@ -49,7 +49,7 @@ test('site structure gives every main page accessible landmarks and identity', (
   }
 });
 
-test('site structure centers the same identity before navigation', () => {
+test('site structure presents the same identity before navigation', () => {
   for (const [file, html] of Object.entries(pages)) {
     const header = html.match(/<header\b[^>]*class="[^"]*site-header[^"]*"[^>]*>([\s\S]*?)<\/header>/i)?.[1] ?? '';
     const brandPosition = header.indexOf('class="brand"');
@@ -60,6 +60,21 @@ test('site structure centers the same identity before navigation', () => {
     assert.match(header, /class="brand-mark"[^>]*>LF<\/span>/i);
     assert.match(header, /class="brand-name"[^>]*>LEFLEF<\/span>/i);
   }
+});
+
+test('all primary pages expose Lunar Reverie controls and relative modules', () => {
+  assert.match(pages['index.html'], /<title>PROFILE — れふれふ<\/title>/i);
+  assert.match(pages['index.html'], /class="brand-name"[^>]*>LEFLEF<\/span>/i);
+  for (const html of [...Object.values(pages), read(detailFile)]) {
+    assert.match(html, /<canvas\b[^>]*id="lunar-field"[^>]*aria-hidden="true"/i);
+    assert.match(html, /class="[^"]*lunar-fallback[^"]*"/i);
+    assert.match(html, /data-sound-toggle[^>]*aria-pressed="false"/i);
+    assert.match(html, /ambient-sound\.js/i);
+    assert.match(html, /lunar-field\.js/i);
+    assert.doesNotMatch(html, /cosmic-field\.js/i);
+  }
+  assert.match(pages['index.html'], /class="hero-status"/i);
+  assert.match(pages['index.html'], /COSMO EFFECTS/i);
 });
 
 test('profile uses a generated identity emblem instead of an image', () => {
@@ -117,10 +132,10 @@ test('site structure never embeds the supplied reference image', () => {
   assert.doesNotMatch(allHtml, /<img\b|Cosmo_effects\.png|assets\/img\//i);
 });
 
-test('site structure loads the shared generated background without the legacy ocean script', () => {
-  for (const html of Object.values(pages)) {
+test('site structure loads the shared lunar shell without the legacy ocean script', () => {
+  for (const html of [...Object.values(pages), read(detailFile)]) {
     assert.equal(
-      (html.match(/<script\b[^>]*type="module"[^>]*src="assets\/js\/cosmic-field\.js"[^>]*><\/script>/gi) ?? []).length,
+      (html.match(/<script\b[^>]*type="module"[^>]*src="(?:\.\.\/\.\.\/)?assets\/js\/lunar-field\.js"[^>]*><\/script>/gi) ?? []).length,
       1,
     );
     assert.doesNotMatch(html, /ocean-bg\.js/i);
@@ -129,7 +144,7 @@ test('site structure loads the shared generated background without the legacy oc
 
 test('site structure loads the generated work preview only after the shared field on Works', () => {
   const works = pages['works.html'];
-  const fieldPosition = works.indexOf('assets/js/cosmic-field.js');
+  const fieldPosition = works.indexOf('assets/js/lunar-field.js');
   const previewPosition = works.indexOf('assets/js/work-preview.js');
 
   assert.ok(fieldPosition >= 0);
@@ -165,7 +180,7 @@ test('the real work card and nested detail page use resolvable relative navigati
     assert.match(detail, new RegExp(`href="${destination.replaceAll('.', '\\.')}"`, 'i'));
   }
 
-  const fieldPosition = detail.indexOf('../../assets/js/cosmic-field.js');
+  const fieldPosition = detail.indexOf('../../assets/js/lunar-field.js');
   const previewPosition = detail.indexOf('../../assets/js/work-preview.js');
   assert.ok(fieldPosition >= 0);
   assert.ok(previewPosition > fieldPosition);
@@ -218,6 +233,7 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
 
   for (const file of existingHtmlFiles) {
     const html = read(file);
+    assert.doesNotMatch(html, /\b(?:href|src)="\//i, `root-relative asset in ${file}`);
     for (const match of html.matchAll(/\b(?:href|src)="([^"]+)"/gi)) {
       const reference = match[1];
       if (/^(?:#|https?:|mailto:)/i.test(reference)) continue;

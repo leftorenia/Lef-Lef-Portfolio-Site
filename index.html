@@ -4,17 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="ShaderとリアルタイムVFXを探究する、れふれふのポートフォリオ。">
-  <meta name="theme-color" content="#050509">
+  <meta name="theme-color" content="#030815">
+  <title>PROFILE — れふれふ</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body data-page="profile">
   <a class="skip-link" href="#main-content">本文へ移動</a>
-  <div class="static-nebula" aria-hidden="true"></div>
+  <canvas id="lunar-field" aria-hidden="true"></canvas>
+  <div class="static-nebula lunar-fallback" aria-hidden="true"></div>
 
   <header class="site-header">
     <a class="brand" href="index.html" aria-label="れふれふ Profile">
       <span class="brand-mark" aria-hidden="true">LF</span>
-      <span class="brand-name">れふれふ</span>
+      <span class="brand-name">LEFLEF</span>
     </a>
     <nav class="site-nav" aria-label="メインナビゲーション">
       <a href="index.html" aria-current="page"><span aria-hidden="true" data-index="01"></span>PROFILE</a>
@@ -47,6 +49,15 @@
         <span class="orbit-star orbit-star-one"></span>
         <span class="orbit-star orbit-star-two"></span>
         <span class="orbit-star orbit-star-three"></span>
+        <span class="hero-moon-note">LUNAR REVERIE</span>
+      </div>
+      <div class="hero-status">
+        <div class="sound-control">
+          <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false">SOUND OFF</button>
+          <span>Ambient sound is optional</span>
+        </div>
+        <a class="hero-featured" href="works/cosmo-effects/index.html"><span>FEATURED WORK</span> COSMO EFFECTS <span aria-hidden="true">↗</span></a>
+        <span class="hero-scroll">SCROLL TO EXPLORE ↓</span>
       </div>
     </section>
 
@@ -74,6 +85,7 @@
     <span>© 2026 LEFLEF</span>
     <span>SHADER / VFX EXPLORATION</span>
   </footer>
-  <script type="module" src="assets/js/cosmic-field.js"></script>
+  <script type="module" src="assets/js/lunar-field.js"></script>
+  <script type="module" src="assets/js/ambient-sound.js"></script>
 </body>
 </html>
