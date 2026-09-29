@@ -55,7 +55,8 @@ test('style contract uses a one-row masthead and circular avatar marks', () => {
 
   const centralMark = css.match(/\.profile-emblem-mark\s*\{[^}]*\}/s)?.[0] ?? '';
   assert.match(centralMark, /width:\s*77\.5%/);
-  assert.match(centralMark, /height:\s*auto/, 'intrinsic image attributes must not stretch the central circle');
+  assert.match(centralMark, /height:\s*77\.5%/, 'width and height must use the same parent-relative diameter');
+  assert.doesNotMatch(centralMark, /height:\s*auto/, 'intrinsic sizing must not control the central circle');
   assert.match(centralMark, /aspect-ratio:\s*1/);
   assert.match(centralMark, /border-radius:\s*50%/);
   assert.match(centralMark, /object-fit:\s*cover/);

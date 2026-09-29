@@ -510,7 +510,7 @@ body[data-page="contact"] .static-nebula {
   z-index: 2;
   display: block;
   width: 77.5%;
-  height: auto;
+  height: 77.5%;
   aspect-ratio: 1;
   border: 1px solid var(--color-line-strong);
   border-radius: 50%;
