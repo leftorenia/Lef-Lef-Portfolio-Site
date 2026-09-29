@@ -68,8 +68,13 @@ test('all primary pages expose Lunar Reverie controls and relative modules', () 
   for (const html of [...Object.values(pages), read(detailFile)]) {
     assert.match(html, /<canvas\b[^>]*id="lunar-field"[^>]*aria-hidden="true"/i);
     assert.match(html, /class="[^"]*lunar-fallback[^"]*"/i);
-    assert.match(html, /data-sound-toggle[^>]*aria-pressed="false"/i);
-    assert.match(html, /ambient-sound\.js/i);
+    const soundButtons = [...html.matchAll(/<button\b[^>]*data-sound-toggle\b[^>]*>/gi)];
+    assert.equal(soundButtons.length, 1);
+    assert.equal(getAttribute(soundButtons[0][0], 'aria-pressed'), 'false');
+    const soundModules = [...html.matchAll(/<script\b[^>]*src="[^"]*ambient-sound\.js"[^>]*>/gi)];
+    assert.equal(soundModules.length, 1);
+    assert.equal(getAttribute(soundModules[0][0], 'type'), 'module');
+    assert.doesNotMatch(html, /<(?:audio|video)\b/i);
     assert.match(html, /lunar-field\.js/i);
     assert.doesNotMatch(html, /cosmic-field\.js/i);
   }
@@ -215,6 +220,8 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
     .filter(Boolean);
   const imageFiles = trackedFiles.filter((file) => /\.(?:png|jpe?g|webp|gif)$/i.test(file));
   assert.deepEqual(imageFiles, []);
+  assert.deepEqual(trackedFiles.filter((file) => /\.(?:mp3|m4a|wav|ogg)$/i.test(file)), []);
+  assert.doesNotMatch(allHtml, /<(?:audio|video)\b/i);
 
   const publicSourceFiles = trackedFiles.filter((file) => (
     /\.html$/i.test(file)
