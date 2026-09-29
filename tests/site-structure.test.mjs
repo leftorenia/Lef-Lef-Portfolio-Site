@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -111,4 +112,48 @@ test('site structure loads the generated work preview only after the shared fiel
   assert.ok(previewPosition > fieldPosition);
   assert.doesNotMatch(pages['index.html'], /work-preview\.js/i);
   assert.doesNotMatch(pages['contact.html'], /work-preview\.js/i);
+});
+
+test('repository policy keeps public assets local, resolvable, and image-free', () => {
+  const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean);
+  const imageFiles = trackedFiles.filter((file) => /\.(?:png|jpe?g|webp|gif)$/i.test(file));
+  assert.deepEqual(imageFiles, []);
+
+  const publicSourceFiles = trackedFiles.filter((file) => (
+    /^(?:index|works|contact|about)\.html$/i.test(file)
+    || /^assets\/(?:css|js)\//i.test(file)
+  ));
+  for (const file of publicSourceFiles) {
+    const source = read(file);
+    assert.doesNotMatch(source, /ocean-bg\.js|Cosmo_effects/i, `stale visual asset in ${file}`);
+  }
+
+  const navDestinations = new Set();
+  for (const html of Object.values(pages)) {
+    const nav = html.match(/<nav\b[^>]*class="[^"]*site-nav[^"]*"[^>]*>([\s\S]*?)<\/nav>/i)?.[1] ?? '';
+    for (const match of nav.matchAll(/<a\b[^>]*href="([^"]+)"/gi)) navDestinations.add(match[1]);
+
+    for (const match of html.matchAll(/\b(?:href|src)="([^"]+)"/gi)) {
+      const reference = match[1];
+      if (/^(?:#|https?:|mailto:)/i.test(reference)) continue;
+      const localPath = reference.split(/[?#]/, 1)[0];
+      assert.ok(existsSync(join(root, ...localPath.split('/'))), `missing local asset: ${reference}`);
+    }
+  }
+
+  assert.deepEqual(
+    [...navDestinations].sort(),
+    ['contact.html', 'index.html', 'works.html'],
+  );
+});
+
+test('repository policy documents preview, verification, motion, and image rules', () => {
+  const readme = read('README.md');
+  assert.match(readme, /npm test/);
+  assert.match(readme, /python -m http\.server 4173/);
+  assert.match(readme, /prefers-reduced-motion/);
+  assert.match(readme, /参考画像[^\n]*(?:含め|使用し)/);
 });

@@ -50,4 +50,9 @@ test('style contract has mobile and reduced-motion fallbacks', () => {
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/s);
   assert.match(css, /prefers-reduced-motion:[\s\S]*animation:\s*none/s);
   assert.match(css, /overflow-x:\s*hidden[\s\S]*overflow-x:\s*clip/s);
+  assert.match(
+    css,
+    /html\s*\{[^}]*overflow-x:\s*hidden[^}]*overflow-x:\s*clip/s,
+    'the root viewport must clip decorative overflow on narrow screens',
+  );
 });
