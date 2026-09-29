@@ -101,3 +101,14 @@ test('site structure loads the shared generated background without the legacy oc
     assert.doesNotMatch(html, /ocean-bg\.js/i);
   }
 });
+
+test('site structure loads the generated work preview only after the shared field on Works', () => {
+  const works = pages['works.html'];
+  const fieldPosition = works.indexOf('assets/js/cosmic-field.js');
+  const previewPosition = works.indexOf('assets/js/work-preview.js');
+
+  assert.ok(fieldPosition >= 0);
+  assert.ok(previewPosition > fieldPosition);
+  assert.doesNotMatch(pages['index.html'], /work-preview\.js/i);
+  assert.doesNotMatch(pages['contact.html'], /work-preview\.js/i);
+});
