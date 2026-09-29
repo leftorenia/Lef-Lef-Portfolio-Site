@@ -144,21 +144,28 @@ function createWebGLRenderer(canvas, metrics) {
   }
 }
 
+const activeScenes = new WeakMap();
+
 export function createLunarScene(canvas, options = {}) {
+  if (canvas && activeScenes.has(canvas)) return activeScenes.get(canvas);
   const windowTarget = options.windowTarget ?? (typeof window === 'undefined' ? undefined : window);
   const documentTarget = options.documentTarget ?? (typeof document === 'undefined' ? undefined : document);
   const requestFrame = options.requestFrame ?? windowTarget?.requestAnimationFrame?.bind(windowTarget) ?? (() => null);
   const cancelFrame = options.cancelFrame ?? windowTarget?.cancelAnimationFrame?.bind(windowTarget) ?? (() => {});
   const now = options.now ?? (() => globalThis.performance?.now?.() ?? Date.now());
   const fallbackElement = options.fallbackElement ?? documentTarget?.querySelector?.('.lunar-fallback');
-  const reducedMotion = options.reducedMotion ?? options.motionQuery?.matches ?? false;
-  const rect = canvas?.getBoundingClientRect?.();
-  const metrics = getSceneMetrics({
-    width: rect?.width ?? windowTarget?.innerWidth,
-    height: rect?.height ?? windowTarget?.innerHeight,
-    devicePixelRatio: windowTarget?.devicePixelRatio,
-    mobile: options.mobile, quality: options.quality, reducedMotion,
-  });
+  const motionQuery = options.motionQuery ?? windowTarget?.matchMedia?.('(prefers-reduced-motion: reduce)');
+  let reducedMotion = options.reducedMotion ?? motionQuery?.matches ?? false;
+  function measure(quality) {
+    const rect = canvas?.getBoundingClientRect?.();
+    return getSceneMetrics({
+      width: windowTarget?.innerWidth ?? rect?.width,
+      height: windowTarget?.innerHeight ?? rect?.height,
+      devicePixelRatio: windowTarget?.devicePixelRatio,
+      mobile: options.mobile, quality, reducedMotion,
+    });
+  }
+  let metrics = measure(options.quality);
   const preset = getPagePreset(options.pageMode);
   const trail = createPointerTrail({ limit: metrics.splatCount });
   const started = now();
@@ -167,6 +174,17 @@ export function createLunarScene(canvas, options = {}) {
   let destroyed = false;
   let fallback = true;
   let reported = false;
+  let contextLost = false;
+  let generation = 0;
+  let lastFrameTime = null;
+  let slowFrames = 0;
+  let lastPointer = null;
+  const removers = [];
+
+  function listen(target, type, handler, listenerOptions) {
+    target?.addEventListener?.(type, handler, listenerOptions);
+    removers.push(() => target?.removeEventListener?.(type, handler, listenerOptions));
+  }
 
   function showFallback(value) {
     fallback = value;
@@ -174,13 +192,23 @@ export function createLunarScene(canvas, options = {}) {
     if (canvas?.style) canvas.style.visibility = value ? 'hidden' : 'visible';
   }
   function stop() {
+    generation++;
     if (frameId !== null) cancelFrame(frameId);
     frameId = null;
+    lastFrameTime = null;
+    slowFrames = 0;
+  }
+  function clearInput() {
+    trail.clear();
+    lastPointer = null;
+  }
+  function releaseRenderer() {
+    renderer?.destroy();
+    renderer = null;
   }
   function fail(error) {
     stop();
-    renderer?.destroy();
-    renderer = null;
+    releaseRenderer();
     showFallback(true);
     if (error && !reported) {
       reported = true;
@@ -189,29 +217,124 @@ export function createLunarScene(canvas, options = {}) {
     }
   }
   function render(time = 0) {
-    if (destroyed || !renderer) return;
+    if (destroyed || contextLost || !renderer || !metrics.width || !metrics.height) return;
     try {
-      renderer.render({ width: metrics.width, height: metrics.height, time, metrics, preset, trail: trail.sample(now()) });
+      renderer.render({
+        width: metrics.width, height: metrics.height, time: reducedMotion ? 0 : time, metrics, preset,
+        trail: reducedMotion ? [] : trail.sample(now()).slice(-metrics.splatCount),
+      });
       showFallback(false);
     } catch (error) { fail(error); }
   }
-  function tick(timestamp) {
-    frameId = null;
-    if (destroyed || fallback || !metrics.animate) return;
-    render(Math.max(0, finite(timestamp, now()) - started) / 1000);
-    if (!fallback) frameId = requestFrame(tick);
+  function canAnimate() {
+    return !destroyed && !contextLost && !!renderer && !fallback && metrics.animate && documentTarget?.hidden !== true;
   }
-  showFallback(true);
-  try {
-    renderer = (options.rendererFactory ?? createWebGLRenderer)(canvas, metrics);
-    if (renderer) {
-      renderer.resize(metrics.bufferWidth, metrics.bufferHeight);
-      render();
-      if (!fallback && metrics.animate && documentTarget?.hidden !== true) frameId = requestFrame(tick);
+  function schedule() {
+    if (!canAnimate() || frameId !== null) return;
+    if (lastFrameTime === null) lastFrameTime = now();
+    const scheduledGeneration = generation;
+    frameId = requestFrame(timestamp => tick(timestamp, scheduledGeneration));
+  }
+  function tick(timestamp, scheduledGeneration) {
+    // A cancelled callback may already be queued when a new loop starts.
+    if (scheduledGeneration !== generation || !canAnimate()) return;
+    frameId = null;
+    const time = finite(timestamp, now());
+    slowFrames = time - lastFrameTime > 22 ? slowFrames + 1 : 0;
+    lastFrameTime = time;
+    if (slowFrames >= 90 && metrics.quality !== 'low') {
+      slowFrames = 0;
+      metrics = measure(metrics.quality === 'high' ? 'medium' : 'low');
+      releaseRenderer();
+      initialize();
+      return;
     }
-  } catch (error) { fail(error); }
+    render(Math.max(0, time - started) / 1000);
+    schedule();
+  }
+  function resizeRenderer() {
+    if (canvas?.style) {
+      canvas.style.width = `${metrics.width}px`;
+      canvas.style.height = `${metrics.height}px`;
+    }
+    renderer?.resize(metrics.bufferWidth, metrics.bufferHeight);
+  }
+  function initialize() {
+    if (destroyed || contextLost || renderer) return;
+    showFallback(true);
+    try {
+      renderer = (options.rendererFactory ?? createWebGLRenderer)(canvas, metrics);
+      resizeRenderer();
+      if (renderer) {
+        render(Math.max(0, now() - started) / 1000);
+        schedule();
+      }
+    } catch (error) { fail(error); }
+  }
+  function onPointerMove(event) {
+    if (!canAnimate()) return;
+    const width = finite(windowTarget?.innerWidth, metrics.width);
+    const height = finite(windowTarget?.innerHeight, metrics.height);
+    if (width <= 0 || height <= 0) return;
+    const time = now();
+    const x = clamp(finite(event.clientX) / width, 0, 1);
+    const y = clamp(finite(event.clientY) / height, 0, 1);
+    // Normalize velocity to one 60 Hz frame, limiting fast/coalesced input.
+    const elapsed = lastPointer ? Math.max(1, time - lastPointer.time) : 16.67;
+    const dx = lastPointer ? clamp((x - lastPointer.x) * 16.67 / elapsed, -1, 1) : 0;
+    const dy = lastPointer ? clamp((y - lastPointer.y) * 16.67 / elapsed, -1, 1) : 0;
+    trail.push({ x, y, dx, dy, strength: clamp(0.2 + Math.hypot(dx, dy) * 2, 0, 1) }, time);
+    lastPointer = { x, y, time };
+  }
+  function onResize() {
+    if (destroyed) return;
+    stop();
+    metrics = measure(metrics.quality);
+    try {
+      resizeRenderer();
+      render(Math.max(0, now() - started) / 1000);
+      schedule();
+    } catch (error) { fail(error); }
+  }
+  function onMotionChange(event) {
+    if (destroyed) return;
+    reducedMotion = Boolean(event.matches);
+    clearInput();
+    onResize();
+  }
+  function onVisibilityChange() {
+    if (destroyed) return;
+    if (documentTarget?.hidden) {
+      stop();
+      clearInput();
+    } else {
+      schedule();
+    }
+  }
+  function onContextLost(event) {
+    if (destroyed) return;
+    event.preventDefault();
+    if (contextLost) return;
+    contextLost = true;
+    clearInput();
+    fail();
+  }
+  function onContextRestored() {
+    if (destroyed || !contextLost) return;
+    contextLost = false;
+    metrics = measure(metrics.quality);
+    initialize();
+  }
 
-  return {
+  listen(windowTarget, 'pointermove', onPointerMove, { passive: true });
+  listen(windowTarget, 'resize', onResize);
+  listen(documentTarget, 'visibilitychange', onVisibilityChange);
+  listen(motionQuery, 'change', onMotionChange);
+  listen(canvas, 'webglcontextlost', onContextLost);
+  listen(canvas, 'webglcontextrestored', onContextRestored);
+  initialize();
+
+  const scene = {
     get fallback() { return fallback; },
     get metrics() { return metrics; },
     renderStatic() { render(); },
@@ -219,12 +342,16 @@ export function createLunarScene(canvas, options = {}) {
       if (destroyed) return;
       destroyed = true;
       stop();
-      trail.clear();
-      renderer?.destroy();
-      renderer = null;
+      clearInput();
+      for (const remove of removers) remove();
+      removers.length = 0;
+      releaseRenderer();
+      if (canvas) activeScenes.delete(canvas);
       showFallback(true);
     },
   };
+  if (canvas) activeScenes.set(canvas, scene);
+  return scene;
 }
 
 export function bootLunarField(root, windowTarget) {

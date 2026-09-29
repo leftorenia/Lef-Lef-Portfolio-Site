@@ -240,3 +240,251 @@ test('boot maps work-detail to the detail preset and marks a generated canvas de
   assert.deepEqual(gl.uniforms.get('uPreset'), [0.6, 0.6, 1, 0]);
   scene.destroy();
 });
+
+// Browser events and GPU rendering are external boundaries; scene behavior stays real.
+function eventTarget(properties = {}) {
+  const listeners = new Map();
+  return {
+    ...properties, listeners,
+    addEventListener(type, handler, options) {
+      const entries = listeners.get(type) ?? [];
+      entries.push({ handler, options });
+      listeners.set(type, entries);
+    },
+    removeEventListener(type, handler) {
+      listeners.set(type, (listeners.get(type) ?? []).filter(entry => entry.handler !== handler));
+    },
+    emit(type, event = {}) {
+      for (const { handler } of [...(listeners.get(type) ?? [])]) handler(event);
+    },
+  };
+}
+
+function lifecycleFixture({ reducedMotion = false, hidden = false } = {}) {
+  let time = 0;
+  let id = 0;
+  const pending = new Map();
+  const cancelled = [];
+  const renderers = [];
+  const windowTarget = eventTarget({ innerWidth: 800, innerHeight: 600, devicePixelRatio: 1 });
+  const documentTarget = eventTarget({ hidden });
+  const motionQuery = eventTarget({ matches: reducedMotion });
+  const canvas = eventTarget(canvasWith());
+  const fallbackElement = { hidden: false };
+  const scene = createLunarScene(canvas, {
+    windowTarget, documentTarget, motionQuery, fallbackElement, now: () => time,
+    requestFrame(callback) { pending.set(++id, callback); return id; },
+    cancelFrame(frameId) { cancelled.push(frameId); pending.delete(frameId); },
+    rendererFactory(_canvas, metrics) {
+      const renderer = {
+        quality: metrics.quality, frames: [], sizes: [], destroys: 0,
+        render(frame) { this.frames.push(frame); },
+        resize(...size) { this.sizes.push(size); },
+        destroy() { this.destroys++; },
+      };
+      renderers.push(renderer);
+      return renderer;
+    },
+  });
+  return {
+    scene, canvas, windowTarget, documentTarget, motionQuery, fallbackElement, pending, cancelled, renderers,
+    setTime(value) { time = value; },
+    frame(duration = 16) {
+      time += duration;
+      assert.equal(pending.size, 1, 'exactly one active RAF');
+      const [frameId, callback] = pending.entries().next().value;
+      pending.delete(frameId);
+      callback(time);
+    },
+  };
+}
+
+test('passive pointer and touch movement clamps splats without preventing scrolling, then decays', () => {
+  const f = lifecycleFixture();
+  assert.deepEqual(f.windowTarget.listeners.get('pointermove')?.[0].options, { passive: true });
+  const move = (clientX, clientY, pointerType = 'mouse') => f.windowTarget.emit('pointermove', {
+    clientX, clientY, pointerType, preventDefault() { assert.fail('input must not prevent scrolling'); },
+  });
+  move(-100, 1200);
+  f.frame();
+  assert.equal(f.renderers[0].frames.at(-1).trail[0].x, 0);
+  assert.equal(f.renderers[0].frames.at(-1).trail[0].y, 1);
+  move(400, 150, 'touch');
+  f.frame();
+  const point = f.renderers[0].frames.at(-1).trail.at(-1);
+  assert.equal(point.x, 0.5);
+  assert.equal(point.y, 0.25);
+  assert.ok(point.strength > 0 && point.strength <= 1);
+  assert.ok(point.dx > 0 && point.dx <= 1);
+  assert.ok(point.dy < 0 && point.dy >= -1);
+  for (let i = 0; i < 20; i++) move(i * 10000, -i * 10000, 'touch');
+  f.frame();
+  assert.equal(f.renderers[0].frames.at(-1).trail.length, 12);
+  for (const splat of f.renderers[0].frames.at(-1).trail) {
+    assert.ok(Object.values(splat).every(Number.isFinite));
+    assert.ok(Math.abs(splat.dx) <= 1 && Math.abs(splat.dy) <= 1);
+  }
+  f.frame(2500);
+  assert.deepEqual(f.renderers[0].frames.at(-1).trail, []);
+  f.scene.destroy();
+});
+
+test('90 consecutive slow frames downgrade each tier once, reset on fast frames, and never upgrade', () => {
+  const f = lifecycleFixture();
+  const run = (count, duration) => { for (let i = 0; i < count; i++) f.frame(duration); };
+  run(89, 23);
+  assert.equal(f.scene.metrics.quality, 'high');
+  run(1, 22);
+  run(89, 23);
+  assert.equal(f.renderers.length, 1, 'a fast frame resets the consecutive slow count');
+  run(1, 23);
+  assert.equal(f.scene.metrics.quality, 'medium');
+  assert.equal(f.renderers.length, 2);
+  assert.equal(f.renderers[0].destroys, 1);
+  assert.deepEqual(f.renderers[1].sizes, [[500, 375]]);
+  run(89, 23);
+  assert.equal(f.scene.metrics.quality, 'medium');
+  run(1, 23);
+  assert.equal(f.scene.metrics.quality, 'low');
+  assert.equal(f.renderers.length, 3);
+  assert.equal(f.renderers[1].destroys, 1);
+  assert.deepEqual(f.renderers[2].sizes, [[400, 300]]);
+  run(100, 16);
+  run(100, 23);
+  f.windowTarget.emit('resize');
+  assert.equal(f.scene.metrics.quality, 'low');
+  assert.equal(f.renderers.length, 3);
+  f.scene.destroy();
+});
+
+test('reduced motion redraws resize and live preferences without retaining pointer motion', () => {
+  const f = lifecycleFixture({ reducedMotion: true });
+  assert.equal(f.pending.size, 0);
+  assert.equal(f.renderers[0].frames.length, 1);
+  f.windowTarget.innerWidth = 1000;
+  f.windowTarget.innerHeight = 500;
+  f.windowTarget.devicePixelRatio = 3;
+  f.windowTarget.emit('resize');
+  assert.deepEqual(f.renderers[0].sizes.at(-1), [1125, 563]);
+  assert.equal(f.renderers[0].frames.length, 2);
+  assert.equal(f.pending.size, 0);
+  f.motionQuery.emit('change', { matches: false });
+  assert.equal(f.scene.metrics.animate, true);
+  assert.equal(f.renderers[0].frames.length, 3);
+  assert.equal(f.pending.size, 1);
+  f.windowTarget.emit('pointermove', { clientX: 500, clientY: 200 });
+  f.frame();
+  assert.equal(f.renderers[0].frames.at(-1).trail.length, 1);
+  f.motionQuery.emit('change', { matches: true });
+  f.windowTarget.emit('pointermove', { clientX: 700, clientY: 300 });
+  f.scene.renderStatic();
+  assert.equal(f.pending.size, 0);
+  assert.equal(f.renderers[0].frames.at(-1).time, 0);
+  assert.deepEqual(f.renderers[0].frames.at(-1).trail, []);
+  f.scene.destroy();
+});
+
+test('hidden documents pause RAF and stale callbacks cannot duplicate a resumed loop', () => {
+  const f = lifecycleFixture();
+  const stale = f.pending.values().next().value;
+  f.documentTarget.hidden = true;
+  f.documentTarget.emit('visibilitychange');
+  assert.equal(f.pending.size, 0);
+  assert.equal(f.cancelled.length, 1);
+  f.documentTarget.hidden = false;
+  f.documentTarget.emit('visibilitychange');
+  f.documentTarget.emit('visibilitychange');
+  stale(5000);
+  assert.equal(f.pending.size, 1);
+  assert.equal(f.renderers[0].frames.length, 1);
+  f.frame();
+  f.motionQuery.emit('change', { matches: true });
+  f.documentTarget.hidden = true;
+  f.documentTarget.emit('visibilitychange');
+  f.documentTarget.hidden = false;
+  f.documentTarget.emit('visibilitychange');
+  assert.equal(f.pending.size, 0);
+  f.scene.destroy();
+});
+
+test('context loss enables fallback and repeated restoration creates exactly one active renderer', () => {
+  const f = lifecycleFixture();
+  const stale = f.pending.values().next().value;
+  let prevented = 0;
+  f.canvas.emit('webglcontextlost', { preventDefault() { prevented++; } });
+  assert.equal(prevented, 1);
+  assert.equal(f.pending.size, 0);
+  assert.equal(f.scene.fallback, true);
+  assert.equal(f.fallbackElement.hidden, false);
+  assert.equal(f.renderers[0].destroys, 1);
+  f.windowTarget.emit('resize');
+  f.documentTarget.emit('visibilitychange');
+  assert.equal(f.renderers.length, 1);
+  f.canvas.emit('webglcontextrestored');
+  f.canvas.emit('webglcontextrestored');
+  stale(1000);
+  assert.equal(f.renderers.length, 2);
+  assert.equal(f.renderers[1].destroys, 0);
+  assert.equal(f.scene.fallback, false);
+  assert.equal(f.pending.size, 1);
+  assert.equal(f.renderers[1].frames.length, 1);
+  f.scene.destroy();
+  assert.equal(f.renderers[1].destroys, 1);
+});
+
+test('destroy removes every lifecycle listener and makes queued events harmless', () => {
+  const f = lifecycleFixture();
+  const targets = [f.windowTarget, f.documentTarget, f.motionQuery, f.canvas];
+  assert.deepEqual(targets.map(target => [...target.listeners.keys()]), [
+    ['pointermove', 'resize'], ['visibilitychange'], ['change'], ['webglcontextlost', 'webglcontextrestored'],
+  ]);
+  const callbacks = targets.flatMap(target => [...target.listeners.values()].flat().map(entry => entry.handler));
+  const stale = f.pending.values().next().value;
+  f.scene.destroy();
+  f.scene.destroy();
+  for (const target of targets) assert.ok([...target.listeners.values()].every(entries => entries.length === 0));
+  for (const callback of callbacks) callback({ matches: false, preventDefault() {} });
+  stale(10000);
+  assert.equal(f.pending.size, 0);
+  assert.equal(f.renderers.length, 1);
+  assert.equal(f.renderers[0].destroys, 1);
+  assert.equal(f.renderers[0].frames.length, 1);
+});
+
+test('zero viewport dimensions pause rendering and a valid resize resumes the same renderer', () => {
+  const f = lifecycleFixture();
+  f.windowTarget.innerWidth = 0;
+  f.windowTarget.innerHeight = 0;
+  f.windowTarget.emit('resize');
+  assert.equal(f.scene.metrics.animate, false);
+  assert.equal(f.pending.size, 0);
+  f.windowTarget.innerWidth = 800;
+  f.windowTarget.innerHeight = 600;
+  f.windowTarget.emit('resize');
+  assert.equal(f.scene.metrics.animate, true);
+  assert.equal(f.pending.size, 1);
+  assert.equal(f.renderers.length, 1);
+  f.scene.destroy();
+});
+
+test('repeated startup reuses the active canvas scene and permits restart after destroy', () => {
+  const f = lifecycleFixture();
+  const root = { body: { dataset: {} }, getElementById: () => f.canvas };
+  assert.equal(bootLunarField(root, f.windowTarget), f.scene);
+  assert.equal(f.pending.size, 1);
+  assert.equal(f.windowTarget.listeners.get('pointermove').length, 1);
+  f.scene.destroy();
+  const restarted = createLunarScene(f.canvas, { reducedMotion: true });
+  assert.notEqual(restarted, f.scene);
+  restarted.destroy();
+});
+
+test('resize and quality recreation preserve the animated scene time', () => {
+  const f = lifecycleFixture();
+  f.frame(1000);
+  f.windowTarget.emit('resize');
+  assert.equal(f.renderers[0].frames.at(-1).time, 1, 'resize must not jump the clouds back to startup');
+  for (let i = 0; i < 90; i++) f.frame(23);
+  assert.equal(f.renderers[1].frames[0].time, 3.07, 'quality replacement must keep the same animation clock');
+  f.scene.destroy();
+});
