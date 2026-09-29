@@ -60,6 +60,24 @@ test('style contract supports linked work cards and the detail layout', () => {
   assert.match(css, /\.work-detail-visual[^\{]*\{[^}]*aspect-ratio:/s);
 });
 
+test('style contract keeps the Works grid responsive and future-proof', () => {
+  assert.match(
+    css,
+    /\.works-grid[^\{]*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s,
+  );
+  assert.match(
+    css,
+    /@media\s*\([^)]*max-width:\s*1099px[^)]*\)[\s\S]*?\.works-grid[^\{]*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s,
+  );
+  assert.match(
+    css,
+    /@media\s*\([^)]*max-width:\s*719px[^)]*\)[\s\S]*?\.works-grid[^\{]*\{[^}]*grid-template-columns:\s*1fr/s,
+  );
+  assert.match(css, /\.work-card[^\{]*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.work-heading h2[^\{]*\{[^}]*overflow-wrap:\s*anywhere/s);
+  assert.match(css, /\.work-tags li[^\{]*\{[^}]*overflow-wrap:\s*anywhere/s);
+});
+
 test('style contract preserves keyboard and active-page affordances', () => {
   assert.match(css, /:focus-visible/);
   assert.match(css, /\.site-nav\s+a\[aria-current="page"\][^\{]*\{[^}]*border/s);
@@ -67,7 +85,7 @@ test('style contract preserves keyboard and active-page affordances', () => {
 });
 
 test('style contract has mobile and reduced-motion fallbacks', () => {
-  assert.match(css, /@media\s*\([^)]*max-width:\s*720px[^)]*\)/s);
+  assert.match(css, /@media\s*\([^)]*max-width:\s*719px[^)]*\)/s);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/s);
   assert.match(css, /prefers-reduced-motion:[\s\S]*animation:\s*none/s);
   assert.match(css, /overflow-x:\s*hidden[\s\S]*overflow-x:\s*clip/s);

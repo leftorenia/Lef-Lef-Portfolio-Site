@@ -172,6 +172,27 @@ test('the real work card and nested detail page use resolvable relative navigati
   assert.doesNotMatch(detail, /\b(?:href|src)="\//i);
 });
 
+test('Works exposes one real project and six inert future slots', () => {
+  const works = pages['works.html'];
+  const cards = [...works.matchAll(/<(?:a|article)\b[^>]*class="[^"]*\bwork-card\b[^"]*"/gi)];
+  const futureCards = [...works.matchAll(
+    /<article\b[^>]*class="[^"]*\bcoming-soon-card\b[^"]*"[^>]*>[\s\S]*?<\/article>/gi,
+  )].map((match) => match[0]);
+
+  assert.equal(cards.length, 7);
+  assert.equal((works.match(/data-work-status="coming-soon"/g) ?? []).length, 6);
+  assert.equal((works.match(/\bwork-card-link\b/g) ?? []).length, 1);
+  assert.equal(futureCards.length, 6);
+
+  for (let index = 2; index <= 7; index += 1) {
+    assert.match(works, new RegExp(`W\\.00${index}[\\s\\S]*COMING SOON`, 'i'));
+  }
+
+  for (const card of futureCards) {
+    assert.doesNotMatch(card, /<a\b|\bhref=|work-arrow|data-work-preview/i);
+  }
+});
+
 test('repository policy keeps public assets local, resolvable, and image-free', () => {
   const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
     .toString('utf8')
