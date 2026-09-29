@@ -679,11 +679,6 @@ a {
   line-height: 1;
 }
 
-.work-arrow {
-  color: var(--color-ice);
-  font-size: 1.3rem;
-}
-
 .work-description {
   margin: 0;
   color: var(--color-muted);

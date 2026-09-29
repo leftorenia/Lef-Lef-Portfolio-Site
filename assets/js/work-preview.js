@@ -195,7 +195,8 @@ export function createWorkPreview(canvas, options = {}) {
   const cancelFrame = options.cancelFrame
     ?? windowTarget?.cancelAnimationFrame?.bind(windowTarget)
     ?? (() => {});
-  const reducedMotion = Boolean(options.reducedMotion);
+  const motionQuery = options.motionQuery;
+  let reducedMotion = motionQuery?.matches === true || Boolean(options.reducedMotion);
 
   let width = 0;
   let height = 0;
@@ -223,10 +224,6 @@ export function createWorkPreview(canvas, options = {}) {
     });
     canvas.width = Math.round(width * metrics.pixelRatio);
     canvas.height = Math.round(height * metrics.pixelRatio);
-    if (canvas.style) {
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-    }
     context.setTransform(metrics.pixelRatio, 0, 0, metrics.pixelRatio, 0, 0);
     particles = Array.from({ length: metrics.particleCount }, () => makeParticle(random));
   }
@@ -311,12 +308,36 @@ export function createWorkPreview(canvas, options = {}) {
     }
   }
 
+  function onMotionPreferenceChange(event) {
+    const nextReducedMotion = event?.matches === true;
+    if (destroyed || nextReducedMotion === reducedMotion) return;
+
+    if (nextReducedMotion && frameId !== null) {
+      cancelFrame(frameId);
+      frameId = null;
+    }
+    reducedMotion = nextReducedMotion;
+    previousTime = 0;
+    streak = null;
+    resize();
+    renderStatic();
+
+    if (!reducedMotion && visible && frameId === null) {
+      frameId = requestFrame(tick);
+    }
+  }
+
   resize();
   renderStatic();
   const fallback = canvas.closest?.('.work-visual')?.querySelector?.('.work-preview-fallback');
   if (fallback?.style) fallback.style.opacity = '0';
   windowTarget?.addEventListener?.('resize', onResize, { passive: true });
   documentTarget?.addEventListener?.('visibilitychange', onVisibilityChange);
+  if (typeof motionQuery?.addEventListener === 'function') {
+    motionQuery.addEventListener('change', onMotionPreferenceChange);
+  } else {
+    motionQuery?.addListener?.(onMotionPreferenceChange);
+  }
   if (metrics.animate && visible) frameId = requestFrame(tick);
 
   return {
@@ -328,6 +349,11 @@ export function createWorkPreview(canvas, options = {}) {
       frameId = null;
       windowTarget?.removeEventListener?.('resize', onResize);
       documentTarget?.removeEventListener?.('visibilitychange', onVisibilityChange);
+      if (typeof motionQuery?.removeEventListener === 'function') {
+        motionQuery.removeEventListener('change', onMotionPreferenceChange);
+      } else {
+        motionQuery?.removeListener?.(onMotionPreferenceChange);
+      }
     },
   };
 }
@@ -339,7 +365,8 @@ export function bootWorkPreviews(
   if (!root || !win || typeof root.querySelectorAll !== 'function') return 0;
 
   const canvases = [...root.querySelectorAll('canvas[data-work-preview]')];
-  const reducedMotion = win.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+  const motionQuery = win.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const reducedMotion = motionQuery?.matches === true;
   let started = 0;
 
   for (const canvas of canvases) {
@@ -348,6 +375,7 @@ export function bootWorkPreviews(
       windowTarget: win,
       documentTarget: root,
       reducedMotion,
+      motionQuery,
     });
     started += 1;
   }

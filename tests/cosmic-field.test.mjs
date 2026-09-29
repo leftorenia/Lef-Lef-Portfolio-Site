@@ -52,11 +52,12 @@ function fakeWindow(overrides = {}) {
   };
 }
 
-function fakeDocument() {
+function fakeDocument(overrides = {}) {
   return {
     hidden: false,
     addEventListener() {},
     removeEventListener() {},
+    ...overrides,
   };
 }
 
@@ -143,6 +144,79 @@ test('cosmic field renders once without scheduling frames in reduced motion', ()
 
   assert.equal(requestedFrames, 0);
   assert.doesNotThrow(() => scene.destroy());
+});
+
+test('cosmic field keeps CSS sizing responsive across live viewport changes', () => {
+  let resizeHandler;
+  const layout = { width: 640, height: 360 };
+  const canvas = fakeCanvas();
+  canvas.getBoundingClientRect = () => ({
+    width: Number.parseFloat(canvas.style.width) || layout.width,
+    height: Number.parseFloat(canvas.style.height) || layout.height,
+  });
+  const scene = createCosmicScene(canvas, {
+    windowTarget: fakeWindow({
+      addEventListener(type, handler) {
+        if (type === 'resize') resizeHandler = handler;
+      },
+    }),
+    documentTarget: fakeDocument(),
+    reducedMotion: true,
+    random: () => 0.5,
+  });
+
+  assert.equal(canvas.width, 640);
+  layout.width = 320;
+  layout.height = 600;
+  resizeHandler();
+
+  assert.equal(canvas.width, 320);
+  assert.equal(canvas.height, 600);
+  assert.equal(canvas.style.width, undefined);
+  assert.equal(canvas.style.height, undefined);
+  scene.destroy();
+});
+
+test('cosmic field follows live reduced-motion preference changes', () => {
+  let motionHandler;
+  let removedHandler;
+  let requestedFrames = 0;
+  let cancelledFrames = 0;
+  const motionQuery = {
+    matches: false,
+    addEventListener(type, handler) {
+      if (type === 'change') motionHandler = handler;
+    },
+    removeEventListener(type, handler) {
+      if (type === 'change') removedHandler = handler;
+    },
+  };
+  const canvas = fakeCanvas();
+  const scene = bootCosmicField(fakeDocument({
+    getElementById: () => canvas,
+    createElement: () => canvas,
+  }), fakeWindow({
+    matchMedia: () => motionQuery,
+    requestAnimationFrame() {
+      requestedFrames += 1;
+      return requestedFrames;
+    },
+    cancelAnimationFrame() {
+      cancelledFrames += 1;
+    },
+  }));
+
+  assert.equal(requestedFrames, 1);
+  assert.equal(typeof motionHandler, 'function');
+  motionQuery.matches = true;
+  motionHandler({ matches: true });
+  assert.equal(cancelledFrames, 1);
+
+  motionQuery.matches = false;
+  motionHandler({ matches: false });
+  assert.equal(requestedFrames, 2);
+  scene.destroy();
+  assert.equal(removedHandler, motionHandler);
 });
 
 test('cosmic field boot is safe without a usable document', () => {

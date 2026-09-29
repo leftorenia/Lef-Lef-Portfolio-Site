@@ -114,6 +114,10 @@ test('site structure loads the generated work preview only after the shared fiel
   assert.doesNotMatch(pages['contact.html'], /work-preview\.js/i);
 });
 
+test('the static work card does not imply an unavailable outbound action', () => {
+  assert.doesNotMatch(pages['works.html'], /class="work-arrow"/i);
+});
+
 test('repository policy keeps public assets local, resolvable, and image-free', () => {
   const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
     .toString('utf8')

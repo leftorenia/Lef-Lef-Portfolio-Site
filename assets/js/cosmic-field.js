@@ -194,7 +194,8 @@ export function createCosmicScene(canvas, options = {}) {
   const cancelFrame = options.cancelFrame
     ?? windowTarget?.cancelAnimationFrame?.bind(windowTarget)
     ?? (() => {});
-  const reducedMotion = Boolean(options.reducedMotion);
+  const motionQuery = options.motionQuery;
+  let reducedMotion = motionQuery?.matches === true || Boolean(options.reducedMotion);
 
   let width = 0;
   let height = 0;
@@ -225,10 +226,6 @@ export function createCosmicScene(canvas, options = {}) {
 
     canvas.width = Math.round(width * metrics.pixelRatio);
     canvas.height = Math.round(height * metrics.pixelRatio);
-    if (canvas.style) {
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-    }
     context.setTransform(metrics.pixelRatio, 0, 0, metrics.pixelRatio, 0, 0);
     stars = Array.from({ length: metrics.starCount }, () => makeStar(random));
     constellations = Array.from(
@@ -335,6 +332,25 @@ export function createCosmicScene(canvas, options = {}) {
     }
   }
 
+  function onMotionPreferenceChange(event) {
+    const nextReducedMotion = event?.matches === true;
+    if (destroyed || nextReducedMotion === reducedMotion) return;
+
+    if (nextReducedMotion && frameId !== null) {
+      cancelFrame(frameId);
+      frameId = null;
+    }
+    reducedMotion = nextReducedMotion;
+    previousTime = 0;
+    meteor = null;
+    resize();
+    renderStatic();
+
+    if (!reducedMotion && visible && frameId === null) {
+      frameId = requestFrame(tick);
+    }
+  }
+
   function onResize() {
     resize();
     renderStatic();
@@ -345,6 +361,11 @@ export function createCosmicScene(canvas, options = {}) {
   windowTarget?.addEventListener?.('resize', onResize, { passive: true });
   windowTarget?.addEventListener?.('pointermove', onPointerMove, { passive: true });
   documentTarget?.addEventListener?.('visibilitychange', onVisibilityChange);
+  if (typeof motionQuery?.addEventListener === 'function') {
+    motionQuery.addEventListener('change', onMotionPreferenceChange);
+  } else {
+    motionQuery?.addListener?.(onMotionPreferenceChange);
+  }
 
   if (metrics.animate && visible) frameId = requestFrame(tick);
 
@@ -358,6 +379,11 @@ export function createCosmicScene(canvas, options = {}) {
       windowTarget?.removeEventListener?.('resize', onResize);
       windowTarget?.removeEventListener?.('pointermove', onPointerMove);
       documentTarget?.removeEventListener?.('visibilitychange', onVisibilityChange);
+      if (typeof motionQuery?.removeEventListener === 'function') {
+        motionQuery.removeEventListener('change', onMotionPreferenceChange);
+      } else {
+        motionQuery?.removeListener?.(onMotionPreferenceChange);
+      }
     },
   };
 }
@@ -388,6 +414,7 @@ export function bootCosmicField(
     windowTarget: win,
     documentTarget: doc,
     reducedMotion: motionQuery?.matches === true,
+    motionQuery,
   });
   canvas.__cosmicScene = scene;
   return scene;

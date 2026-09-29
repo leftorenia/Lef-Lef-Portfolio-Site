@@ -141,6 +141,78 @@ test('work preview renders once without scheduling frames in reduced motion', ()
   assert.doesNotThrow(() => preview.destroy());
 });
 
+test('work preview keeps CSS sizing responsive across live viewport changes', () => {
+  let resizeHandler;
+  const layout = { width: 900, height: 520 };
+  const canvas = fakeCanvas();
+  canvas.getBoundingClientRect = () => ({
+    width: Number.parseFloat(canvas.style.width) || layout.width,
+    height: Number.parseFloat(canvas.style.height) || layout.height,
+  });
+  const preview = createWorkPreview(canvas, {
+    windowTarget: fakeWindow({
+      addEventListener(type, handler) {
+        if (type === 'resize') resizeHandler = handler;
+      },
+    }),
+    documentTarget: fakeDocument(),
+    reducedMotion: true,
+    random: () => 0.5,
+  });
+
+  assert.equal(canvas.width, 900);
+  layout.width = 360;
+  layout.height = 240;
+  resizeHandler();
+
+  assert.equal(canvas.width, 360);
+  assert.equal(canvas.height, 240);
+  assert.equal(canvas.style.width, undefined);
+  assert.equal(canvas.style.height, undefined);
+  preview.destroy();
+});
+
+test('work preview follows live reduced-motion preference changes', () => {
+  let motionHandler;
+  let removedHandler;
+  let requestedFrames = 0;
+  let cancelledFrames = 0;
+  const motionQuery = {
+    matches: false,
+    addEventListener(type, handler) {
+      if (type === 'change') motionHandler = handler;
+    },
+    removeEventListener(type, handler) {
+      if (type === 'change') removedHandler = handler;
+    },
+  };
+  const canvas = fakeCanvas();
+  const root = fakeDocument({ querySelectorAll: () => [canvas] });
+  const win = fakeWindow({
+    matchMedia: () => motionQuery,
+    requestAnimationFrame() {
+      requestedFrames += 1;
+      return requestedFrames;
+    },
+    cancelAnimationFrame() {
+      cancelledFrames += 1;
+    },
+  });
+
+  assert.equal(bootWorkPreviews(root, win), 1);
+  assert.equal(requestedFrames, 1);
+  assert.equal(typeof motionHandler, 'function');
+  motionQuery.matches = true;
+  motionHandler({ matches: true });
+  assert.equal(cancelledFrames, 1);
+
+  motionQuery.matches = false;
+  motionHandler({ matches: false });
+  assert.equal(requestedFrames, 2);
+  canvas.__workPreview.destroy();
+  assert.equal(removedHandler, motionHandler);
+});
+
 test('work preview pauses and resumes animation with document visibility', () => {
   let visibilityHandler;
   let requestedFrames = 0;
