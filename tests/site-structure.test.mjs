@@ -46,6 +46,27 @@ test('site structure gives every main page accessible landmarks and identity', (
   }
 });
 
+test('site structure centers the same identity before navigation', () => {
+  for (const [file, html] of Object.entries(pages)) {
+    const header = html.match(/<header\b[^>]*class="[^"]*site-header[^"]*"[^>]*>([\s\S]*?)<\/header>/i)?.[1] ?? '';
+    const brandPosition = header.indexOf('class="brand"');
+    const navPosition = header.indexOf('class="site-nav"');
+
+    assert.ok(brandPosition >= 0, `missing brand in ${file}`);
+    assert.ok(navPosition > brandPosition, `navigation must follow brand in ${file}`);
+    assert.match(header, /class="brand-mark"[^>]*>LF<\/span>/i);
+    assert.match(header, /class="brand-name"[^>]*>LEFLEF<\/span>/i);
+  }
+});
+
+test('profile uses a generated identity emblem instead of an image', () => {
+  const profile = pages['index.html'];
+
+  assert.equal((profile.match(/class="profile-emblem"/gi) ?? []).length, 1);
+  assert.match(profile, /class="[^"]*\bprofile-emblem-mark\b[^"]*"[^>]*>LF<\/span>/i);
+  assert.doesNotMatch(profile, /<img\b/i);
+});
+
 test('site structure contains truthful profile, work, and contact content', () => {
   assert.match(pages['index.html'], /Shader \/ VFX Explorer/);
   for (const label of ['SHADER', 'REALTIME VFX', 'UNITY', 'VISUAL STUDY']) {

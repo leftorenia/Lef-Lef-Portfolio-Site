@@ -39,6 +39,12 @@ test('style contract includes every page layout hook', () => {
   assert.match(css, /#cosmic-field[^\{]*\{[^}]*pointer-events:\s*none/s);
 });
 
+test('style contract centers the masthead and generated Profile emblem', () => {
+  assert.match(css, /\.site-header[^\{]*\{[^}]*flex-direction:\s*column/s);
+  assert.match(css, /\.profile-emblem[^\{]*\{[^}]*aspect-ratio:\s*1/s);
+  assert.match(css, /\.profile-emblem-mark[^\{]*\{[^}]*place-items:\s*center/s);
+});
+
 test('style contract preserves keyboard and active-page affordances', () => {
   assert.match(css, /:focus-visible/);
   assert.match(css, /\.site-nav\s+a\[aria-current="page"\][^\{]*\{[^}]*border/s);
