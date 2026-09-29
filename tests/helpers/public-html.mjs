@@ -75,27 +75,53 @@ function* htmlTags(source) {
 }
 
 // Token boundaries, rather than whitespace, delimit ECMAScript module syntax.
-// Strings and comments are consumed as units so their example text is not code.
+// Literal bodies and comments are opaque; template interpolations contain code.
 function moduleTokens(source) {
   const tokens = [];
   let index = 0;
+  function escape() {
+    index++;
+    const escaped = source[index++];
+    return ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', '0': '\0', '\n': '' })[escaped] ?? escaped;
+  }
   function template() {
-    tokens.push({ kind: 'template', value: '`' });
+    const opening = { kind: 'template', value: '`' };
+    tokens.push(opening);
+    let value = '';
+    let computed = false;
     index++;
     while (index < source.length) {
-      if (source[index] === '\\') { index += 2; continue; }
+      if (source[index] === '\\') { value += escape(); continue; }
       if (source[index] === '`') { index++; break; }
       if (source.startsWith('${', index)) {
+        computed = true;
         index += 2;
         tokens.push({ kind: 'punctuation', value: '{' });
         scan(true);
         tokens.push({ kind: 'punctuation', value: '}' });
-      } else index++;
+      } else value += source[index++];
     }
-    tokens.push({ kind: 'template', value: '`' });
+    if (computed) tokens.push({ kind: 'template', value: '`' });
+    else Object.assign(opening, { kind: 'template-string', value });
+  }
+  function regexp() {
+    index++;
+    let characterClass = false;
+    while (index < source.length) {
+      const char = source[index++];
+      if (char === '\\') { index++; continue; }
+      if (char === '[') characterClass = true;
+      else if (char === ']') characterClass = false;
+      else if (char === '/' && !characterClass) break;
+    }
+    while (index < source.length && /[a-z]/i.test(source[index])) index++;
+    tokens.push({ kind: 'regexp', value: '' });
   }
   function scan(interpolation = false) {
     let braces = 0;
+    let expressionAllowed = true;
+    const parentheses = [];
+    const blocks = [];
     while (index < source.length) {
       const char = source[index];
       if (char === '}' && interpolation && braces === 0) { index++; return; }
@@ -110,32 +136,61 @@ function moduleTokens(source) {
         index = end < 0 ? source.length : end + 2;
         continue;
       }
-      if (char === '`') { template(); continue; }
+      if (char === '/' && expressionAllowed) { regexp(); expressionAllowed = false; continue; }
+      if (char === '`') { template(); expressionAllowed = false; continue; }
       if (char === '"' || char === "'") {
         const quote = char;
         let value = '';
         index++;
         while (index < source.length && source[index] !== quote) {
           if (source[index] === '\\') {
-            index++;
             // Escaped quote/slash characters stay inside this literal token.
-            const escaped = source[index++];
-            value += ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', '0': '\0', '\n': '' })[escaped] ?? escaped;
+            value += escape();
           } else value += source[index++];
         }
         index++;
         tokens.push({ kind: 'string', value });
+        expressionAllowed = false;
         continue;
       }
       if (/[a-z_$]/i.test(char)) {
         const start = index++;
         while (index < source.length && /[\w$]/.test(source[index])) index++;
-        tokens.push({ kind: 'word', value: source.slice(start, index) });
+        const value = source.slice(start, index);
+        tokens.push({ kind: 'word', value });
+        expressionAllowed = /^(?:return|throw|case|delete|void|typeof|new|in|instanceof|yield|await|else|do)$/.test(value);
         continue;
       }
+      if (/\d/.test(char)) {
+        const start = index++;
+        while (index < source.length && /[\w.]/.test(source[index])) index++;
+        tokens.push({ kind: 'number', value: source.slice(start, index) });
+        expressionAllowed = false;
+        continue;
+      }
+      const previous = tokens.at(-1)?.value;
+      const pair = source.slice(index, index + 2);
+      if (['++', '--', '=>'].includes(pair)) {
+        tokens.push({ kind: 'punctuation', value: pair });
+        if (pair === '=>') expressionAllowed = true;
+        index += 2;
+        continue;
+      }
+      if (char === '(') {
+        parentheses.push(['if', 'while', 'for', 'with', 'switch', 'catch'].includes(previous));
+        expressionAllowed = true;
+      } else if (char === ')') expressionAllowed = parentheses.pop() === true;
+      else if (char === '{') {
+        // Blocks can be followed by a regex statement; object values divide.
+        blocks.push(previous === undefined || [';', ')', '=>', 'else', 'do', 'try', 'finally'].includes(previous)
+          || (previous === '{' && !(interpolation && braces === 0)));
+        braces++;
+        expressionAllowed = true;
+      } else if (char === '}') {
+        braces--;
+        expressionAllowed = blocks.pop() === true;
+      } else expressionAllowed = ![']', '.'].includes(char);
       tokens.push({ kind: 'punctuation', value: char });
-      if (char === '{') braces++;
-      else if (char === '}') braces--;
       index++;
     }
   }
@@ -153,8 +208,8 @@ function* moduleReferences(source) {
     if (token.value === 'import' && next?.kind === 'string') { yield next.value; continue; }
     if (next?.value === '(') {
       // A literal first argument must end here (or precede import options).
-      // Concatenations, variables and template expressions remain computed.
-      if (token.value === 'import' && tokens[index + 2]?.kind === 'string'
+      // Concatenations, variables and interpolated templates remain computed.
+      if (token.value === 'import' && ['string', 'template-string'].includes(tokens[index + 2]?.kind)
         && [')', ','].includes(tokens[index + 3]?.value)) yield tokens[index + 2].value;
       continue;
     }

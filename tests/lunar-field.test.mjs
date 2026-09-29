@@ -329,31 +329,65 @@ test('passive pointer and touch movement clamps splats without preventing scroll
   f.scene.destroy();
 });
 
-test('90 consecutive slow frames downgrade each tier once, reset on fast frames, and never upgrade', () => {
+test('alternating 16ms and 33ms frames downgrade once per full 90-frame average and never upgrade', () => {
   const f = lifecycleFixture();
-  const run = (count, duration) => { for (let i = 0; i < count; i++) f.frame(duration); };
-  run(89, 23);
+  const run = (count) => { for (let i = 0; i < count; i++) f.frame(i % 2 === 0 ? 16 : 33); };
+  run(89);
   assert.equal(f.scene.metrics.quality, 'high');
-  run(1, 22);
-  run(89, 23);
-  assert.equal(f.renderers.length, 1, 'a fast frame resets the consecutive slow count');
-  run(1, 23);
+  f.frame(33);
   assert.equal(f.scene.metrics.quality, 'medium');
   assert.equal(f.renderers.length, 2);
   assert.equal(f.renderers[0].destroys, 1);
   assert.deepEqual(f.renderers[1].sizes, [[500, 375]]);
-  run(89, 23);
+  run(89);
   assert.equal(f.scene.metrics.quality, 'medium');
-  run(1, 23);
+  f.frame(33);
   assert.equal(f.scene.metrics.quality, 'low');
   assert.equal(f.renderers.length, 3);
   assert.equal(f.renderers[1].destroys, 1);
   assert.deepEqual(f.renderers[2].sizes, [[400, 300]]);
-  run(100, 16);
-  run(100, 23);
+  run(720);
+  for (let i = 0; i < 100; i++) f.frame(16);
   f.windowTarget.emit('resize');
   assert.equal(f.scene.metrics.quality, 'low');
   assert.equal(f.renderers.length, 3);
+  f.scene.destroy();
+});
+
+test('quality uses a bounded rolling window and only downgrades above the 22ms mean', () => {
+  const f = lifecycleFixture();
+  for (let i = 0; i < 45; i++) f.frame(28);
+  for (let i = 0; i < 45; i++) f.frame(16);
+  assert.equal(f.scene.metrics.quality, 'high', 'a full window averaging exactly 22ms is allowed');
+  for (let i = 0; i < 45; i++) f.frame(28);
+  assert.equal(f.scene.metrics.quality, 'high', 'old 28ms samples must leave the window');
+  f.frame(28);
+  assert.equal(f.scene.metrics.quality, 'medium', 'replacing one 16ms sample crosses the mean threshold');
+  for (let i = 0; i < 89; i++) f.frame(22);
+  assert.equal(f.scene.metrics.quality, 'medium', 'downgrade must clear all previous samples');
+  f.frame(22);
+  assert.equal(f.scene.metrics.quality, 'medium', 'the next complete 22ms window stays at medium');
+  f.frame(23);
+  assert.equal(f.scene.metrics.quality, 'low');
+  assert.deepEqual(f.renderers.map(renderer => renderer.sizes.length), [1, 1, 1]);
+  f.scene.destroy();
+});
+
+test('visibility pauses and resize reset the measurement window without counting inactive time', () => {
+  const f = lifecycleFixture();
+  for (let i = 0; i < 89; i++) f.frame(24);
+  f.documentTarget.hidden = true;
+  f.documentTarget.emit('visibilitychange');
+  f.setTime(100000);
+  f.documentTarget.hidden = false;
+  f.documentTarget.emit('visibilitychange');
+  for (let i = 0; i < 89; i++) f.frame(24);
+  assert.equal(f.scene.metrics.quality, 'high');
+  f.windowTarget.emit('resize');
+  for (let i = 0; i < 89; i++) f.frame(24);
+  assert.equal(f.scene.metrics.quality, 'high');
+  f.frame(24);
+  assert.equal(f.scene.metrics.quality, 'medium');
   f.scene.destroy();
 });
 

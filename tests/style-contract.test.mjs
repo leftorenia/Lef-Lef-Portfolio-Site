@@ -132,6 +132,15 @@ test('linked work reveals moonlight without relying on motion or capturing canva
   assert.match(reducedCss, /\.work-card-link:hover\s+\.work-arrow\s*,\s*\.work-card-link:focus-visible\s+\.work-arrow\s*\{[^}]*transform:\s*none/s);
 });
 
+test('linked preview localizes its cloud reveal to pointer coordinates without intercepting links', () => {
+  const highlight = css.match(/\.work-card-link\s+\.work-visual::after\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(highlight, /background:[^;]*radial-gradient/s);
+  assert.match(highlight, /mask-image:[^;]*at var\(--work-pointer-x,\s*50%\) var\(--work-pointer-y,\s*50%\)/s);
+  assert.match(highlight, /opacity:\s*var\(--work-pointer-active,\s*0\)/);
+  assert.match(css, /\.work-visual::after\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(reducedCss, /\.work-card-link\s+\.work-visual::after\s*\{[^}]*opacity:\s*0/s);
+});
+
 test('Contact values remain fully readable and detail fallback has no moon', () => {
   assert.match(css, /\.contact-value\s*\{[^}]*overflow-wrap:\s*anywhere/s);
   assert.doesNotMatch(css, /\.contact-value\s*\{[^}]*text-overflow:\s*ellipsis/s);

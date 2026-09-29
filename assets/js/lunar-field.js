@@ -177,7 +177,10 @@ export function createLunarScene(canvas, options = {}) {
   let contextLost = false;
   let generation = 0;
   let lastFrameTime = null;
-  let slowFrames = 0;
+  const frameTimes = new Float64Array(90);
+  let frameCount = 0;
+  let frameCursor = 0;
+  let frameTotal = 0;
   let lastPointer = null;
   const removers = [];
 
@@ -196,7 +199,13 @@ export function createLunarScene(canvas, options = {}) {
     if (frameId !== null) cancelFrame(frameId);
     frameId = null;
     lastFrameTime = null;
-    slowFrames = 0;
+    resetFrameWindow();
+  }
+  function resetFrameWindow() {
+    frameTimes.fill(0);
+    frameCount = 0;
+    frameCursor = 0;
+    frameTotal = 0;
   }
   function clearInput() {
     trail.clear();
@@ -240,10 +249,15 @@ export function createLunarScene(canvas, options = {}) {
     if (scheduledGeneration !== generation || !canAnimate()) return;
     frameId = null;
     const time = finite(timestamp, now());
-    slowFrames = time - lastFrameTime > 22 ? slowFrames + 1 : 0;
+    const duration = Math.max(0, time - lastFrameTime);
+    frameTotal += duration - frameTimes[frameCursor];
+    frameTimes[frameCursor] = duration;
+    frameCursor = (frameCursor + 1) % frameTimes.length;
+    frameCount = Math.min(frameCount + 1, frameTimes.length);
     lastFrameTime = time;
-    if (slowFrames >= 90 && metrics.quality !== 'low') {
-      slowFrames = 0;
+    if (frameCount === frameTimes.length && frameTotal / frameCount > 22 && metrics.quality !== 'low') {
+      resetFrameWindow();
+      lastFrameTime = null;
       metrics = measure(metrics.quality === 'high' ? 'medium' : 'low');
       releaseRenderer();
       initialize();

@@ -397,6 +397,23 @@ for (const [file, source, expected] of [
   ['index.html', `<p>import './prose.js'; It's not code.</p><script type="application/json">"import './json.js'"</script><!-- <script type="module">import './comment.js';</script> --><script type="module">const s = "import './string.js'"; /* import './comment.js'; */ const t = \`import './template.js'\`;</script>`, []],
   ['module.js', "const text = `import './text.js'; ${\"import './string.js'\"} ${/* import './comment.js'; */ 1}`;", []],
   ['module.js', "const text = `escaped \\${import('./text.js')}`;", []],
+  ['module.js', 'const pattern = /\'/; import "https://example.com/code.js";', ['module.js: remote or unsupported resource https://example.com/code.js']],
+  ['module.js', '/import("missing.js")/', []],
+  ['module.js', String.raw`const pattern = /[/'"\\]import("missing.js")\//giu; import './missing.js';`, ['module.js: missing ./missing.js']],
+  ['module.js', 'function match(value) { return /import("missing.js")/.test(value); } if (ready) /import("missing.js")/.test(value);', []],
+  ['module.js', 'const match = value => /import("missing.js")/.test(value);', []],
+  ['module.js', 'const ratio = total / count; import "https://example.com/code.js";', ['module.js: remote or unsupported resource https://example.com/code.js']],
+  ['module.js', 'const ratio = 10 / 2 / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = (total + 1) / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = getTotal() / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = values[0] / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = total++ / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = {} / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = `10` / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'const ratio = /x/ / import("./missing.js");', ['module.js: missing ./missing.js']],
+  ['module.js', 'import(`./missing.js`);', ['module.js: missing ./missing.js']],
+  ['module.js', 'import(`https://example.com/code.js`);', ['module.js: remote or unsupported resource https://example.com/code.js']],
+  ['module.js', 'import(`./missing-${name}.js`); import(`./missing.js` + suffix);', []],
 ]) {
   test(`policy scans executable code boundaries: ${source}`, () => {
     const fixture = mkdtempSync(join(tmpdir(), 'lef-code-boundaries-'));

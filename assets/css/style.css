@@ -766,6 +766,16 @@ body[data-page="contact"] .static-nebula {
   pointer-events: none;
 }
 
+.work-card-link .work-visual::after {
+  background:
+    radial-gradient(ellipse at 36% 57%, rgba(190, 214, 246, 0.22), transparent 55%),
+    radial-gradient(ellipse at 70% 33%, rgba(109, 145, 201, 0.32), transparent 60%),
+    radial-gradient(ellipse at var(--work-pointer-x, 50%) var(--work-pointer-y, 50%), rgba(215, 196, 231, 0.12), transparent 65%);
+  mask-image: radial-gradient(ellipse 9rem 6rem at var(--work-pointer-x, 50%) var(--work-pointer-y, 50%), #000 10%, transparent 100%);
+  opacity: var(--work-pointer-active, 0);
+  transition: opacity 220ms ease;
+}
+
 .work-preview {
   pointer-events: none;
   position: absolute;
@@ -1438,5 +1448,9 @@ body[data-page="contact"] .static-nebula {
   .work-card-link:hover .work-arrow,
   .work-card-link:focus-visible .work-arrow {
     transform: none;
+  }
+
+  .work-card-link .work-visual::after {
+    opacity: 0;
   }
 }

@@ -209,6 +209,31 @@ export function createWorkPreview(canvas, options = {}) {
   let frameId = null;
   let destroyed = false;
   let visible = documentTarget?.hidden !== true;
+  const linkedVisual = canvas.closest?.('.work-card-link')?.querySelector?.('.work-visual');
+
+  function clearPointer() {
+    for (const name of ['--work-pointer-x', '--work-pointer-y', '--work-pointer-active']) {
+      linkedVisual?.style?.removeProperty(name);
+    }
+  }
+
+  function onPointerMove(event) {
+    if (destroyed || reducedMotion || !visible) return;
+    const rect = linkedVisual?.getBoundingClientRect();
+    if (!rect?.width || !rect.height) return;
+    const x = clamp((finite(event.clientX, rect.left) - rect.left) / rect.width, 0, 1);
+    const y = clamp((finite(event.clientY, rect.top) - rect.top) / rect.height, 0, 1);
+    linkedVisual.style.setProperty('--work-pointer-x', `${x * 100}%`);
+    linkedVisual.style.setProperty('--work-pointer-y', `${y * 100}%`);
+    linkedVisual.style.setProperty('--work-pointer-active', '1');
+  }
+
+  const pointerListeners = [
+    ['pointermove', onPointerMove],
+    ['pointerleave', clearPointer],
+    ['pointercancel', clearPointer],
+    ['pointerup', clearPointer],
+  ];
 
   function resize() {
     const rect = typeof canvas.getBoundingClientRect === 'function'
@@ -291,12 +316,14 @@ export function createWorkPreview(canvas, options = {}) {
   }
 
   function onResize() {
+    clearPointer();
     resize();
     renderStatic();
   }
 
   function onVisibilityChange() {
     visible = documentTarget?.hidden !== true;
+    if (!visible) clearPointer();
     if (!visible && frameId !== null) {
       cancelFrame(frameId);
       frameId = null;
@@ -317,6 +344,7 @@ export function createWorkPreview(canvas, options = {}) {
       frameId = null;
     }
     reducedMotion = nextReducedMotion;
+    clearPointer();
     previousTime = 0;
     streak = null;
     resize();
@@ -332,6 +360,9 @@ export function createWorkPreview(canvas, options = {}) {
   const fallback = canvas.parentElement?.querySelector?.('.work-preview-fallback')
     ?? canvas.closest?.('.work-visual, .work-detail-visual')?.querySelector?.('.work-preview-fallback');
   if (fallback?.style) fallback.style.opacity = '0';
+  for (const [type, handler] of pointerListeners) {
+    linkedVisual?.addEventListener(type, handler, { passive: true });
+  }
   windowTarget?.addEventListener?.('resize', onResize, { passive: true });
   documentTarget?.addEventListener?.('visibilitychange', onVisibilityChange);
   if (typeof motionQuery?.addEventListener === 'function') {
@@ -348,6 +379,10 @@ export function createWorkPreview(canvas, options = {}) {
       destroyed = true;
       if (frameId !== null) cancelFrame(frameId);
       frameId = null;
+      clearPointer();
+      for (const [type, handler] of pointerListeners) {
+        linkedVisual?.removeEventListener(type, handler);
+      }
       windowTarget?.removeEventListener?.('resize', onResize);
       documentTarget?.removeEventListener?.('visibilitychange', onVisibilityChange);
       if (typeof motionQuery?.removeEventListener === 'function') {

@@ -70,6 +70,84 @@ function fakeCanvas(context = noopContext()) {
   };
 }
 
+function interactivePreviewFixture({ reducedMotion = false } = {}) {
+  const listeners = new Map();
+  const properties = new Map();
+  const visual = {
+    style: {
+      setProperty: (name, value) => properties.set(name, value),
+      removeProperty: name => properties.delete(name),
+    },
+    getBoundingClientRect: () => ({ left: 100, top: 200, width: 400, height: 300 }),
+    addEventListener(type, handler, options) { listeners.set(type, { handler, options }); },
+    removeEventListener(type, handler) {
+      if (listeners.get(type)?.handler === handler) listeners.delete(type);
+    },
+  };
+  const link = { querySelector: selector => selector === '.work-visual' ? visual : null };
+  const canvas = fakeCanvas();
+  canvas.closest = selector => selector === '.work-card-link' ? link : null;
+  let motionHandler;
+  const preview = createWorkPreview(canvas, {
+    windowTarget: fakeWindow(), documentTarget: fakeDocument(), reducedMotion,
+    motionQuery: { addEventListener(_type, handler) { motionHandler = handler; }, removeEventListener() {} },
+    random: () => 0.5,
+  });
+  const emit = (type, values = {}) => listeners.get(type)?.handler({
+    pointerType: 'mouse', clientX: 200, clientY: 275, ...values,
+    preventDefault() { assert.fail('preview input must preserve native scrolling and links'); },
+  });
+  return { preview, listeners, properties, emit, changeMotion: matches => motionHandler({ matches }) };
+}
+
+test('linked preview reveals moonlight at the pointer location using passive input', () => {
+  const f = interactivePreviewFixture();
+  f.emit('pointermove');
+  assert.equal(f.properties.get('--work-pointer-x'), '25%');
+  assert.equal(f.properties.get('--work-pointer-y'), '25%');
+  assert.equal(f.properties.get('--work-pointer-active'), '1');
+  f.emit('pointermove', { clientX: 400, clientY: 425 });
+  assert.equal(f.properties.get('--work-pointer-x'), '75%');
+  assert.equal(f.properties.get('--work-pointer-y'), '75%');
+  for (const { options } of f.listeners.values()) assert.equal(options.passive, true);
+  f.emit('pointerleave');
+  assert.equal(f.properties.size, 0);
+  f.preview.destroy();
+});
+
+test('touch reveal preserves scrolling and clears on release or cancellation', () => {
+  const f = interactivePreviewFixture();
+  for (const event of ['pointerup', 'pointercancel']) {
+    f.emit('pointermove', { pointerType: 'touch', clientX: 900, clientY: -10 });
+    assert.equal(f.properties.get('--work-pointer-x'), '100%');
+    assert.equal(f.properties.get('--work-pointer-y'), '0%');
+    assert.equal(f.properties.get('--work-pointer-active'), '1');
+    f.emit(event, { pointerType: 'touch' });
+    assert.equal(f.properties.size, 0);
+  }
+  f.preview.destroy();
+});
+
+test('reduced motion disables local tracking live and destroy removes listeners and highlight', () => {
+  const f = interactivePreviewFixture({ reducedMotion: true });
+  f.emit('pointermove');
+  assert.equal(f.properties.size, 0);
+  f.changeMotion(false);
+  f.emit('pointermove');
+  assert.equal(f.properties.get('--work-pointer-active'), '1');
+  f.changeMotion(true);
+  assert.equal(f.properties.size, 0);
+  f.changeMotion(false);
+  f.emit('pointermove');
+  const queued = f.listeners.get('pointermove').handler;
+  f.preview.destroy();
+  f.preview.destroy();
+  assert.equal(f.listeners.size, 0);
+  assert.equal(f.properties.size, 0);
+  queued({ pointerType: 'mouse', clientX: 200, clientY: 275 });
+  assert.equal(f.properties.size, 0, 'queued input after destruction stays inert');
+});
+
 test('work preview caps pixel ratio and particle density', () => {
   const metrics = getPreviewMetrics({
     width: 900,
