@@ -91,3 +91,13 @@ test('site structure preserves the old About URL with a Profile fallback', () =>
 test('site structure never embeds the supplied reference image', () => {
   assert.doesNotMatch(allHtml, /<img\b|Cosmo_effects\.png|assets\/img\//i);
 });
+
+test('site structure loads the shared generated background without the legacy ocean script', () => {
+  for (const html of Object.values(pages)) {
+    assert.equal(
+      (html.match(/<script\b[^>]*type="module"[^>]*src="assets\/js\/cosmic-field\.js"[^>]*><\/script>/gi) ?? []).length,
+      1,
+    );
+    assert.doesNotMatch(html, /ocean-bg\.js/i);
+  }
+});
