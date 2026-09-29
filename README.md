@@ -2,7 +2,7 @@
 
 ShaderとリアルタイムVFXを探究する、れふれふの個人ポートフォリオサイトです。
 
-公開URL: https://leftorenia.github.io/Lef-Lef-Portfolio-Site/index.html
+公開URL: https://leftorenia.github.io/Lef-Lef-Portfolio-Site/index.html](https://leftorenia.github.io/Lef-Lef-Portfolio-Site/index.html
 
 ## Pages
 
