@@ -3,38 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Works | YOUR NAME</title>
+  <meta name="description" content="れふれふによるShader・リアルタイムVFXの制作と表現研究。">
+  <meta name="theme-color" content="#050509">
+  <title>WORKS — れふれふ</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
+<body data-page="works">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <div class="static-nebula" aria-hidden="true"></div>
+
   <header class="site-header">
-    <a class="brand" href="index.html">YOUR NAME</a>
-    <nav class="site-nav">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="works.html" class="active">Works</a>
-      <a href="contact.html">Contact</a>
+    <a class="brand" href="index.html" aria-label="れふれふ Profile">
+      <span class="brand-mark" aria-hidden="true">LF</span>
+      <span class="brand-name">LEFLEF</span>
+    </a>
+    <nav class="site-nav" aria-label="メインナビゲーション">
+      <a href="index.html"><span aria-hidden="true" data-index="01"></span>PROFILE</a>
+      <a href="works.html" aria-current="page"><span aria-hidden="true" data-index="02"></span>WORKS</a>
+      <a href="contact.html"><span aria-hidden="true" data-index="03"></span>CONTACT</a>
     </nav>
-    <div class="social-links">
-      <a href="https://github.com/yourname" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      </a>
-      <a href="https://note.com/yourname" target="_blank" rel="noopener" aria-label="Note">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="0.5" y="0.5" width="15" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 11.5V4.5h1.6l3.8 5V4.5H12v7H10.4l-3.8-5v5H5z" fill="currentColor" stroke="none"/></svg>
-      </a>
-      <a href="https://x.com/yourname" target="_blank" rel="noopener" aria-label="X">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 1l6 7-6 7h1.6l5.1-5.95L12.6 15H15L8.7 7.3 14.4 1h-1.6L8 6.45 3.4 1H1z"/></svg>
-      </a>
-    </div>
   </header>
-  <main>
-    <h2 class="page-title">Works</h2>
-    <div class="works-grid">
-      <div class="work-card placeholder-card">
-        <p>作品を準備中です</p>
-      </div>
-    </div>
+
+  <main id="main-content" class="page-shell works-page">
+    <header class="page-heading">
+      <p class="section-index"><span>02</span> FIELD 02</p>
+      <p class="eyebrow">SELECTED EXPERIMENT</p>
+      <h1>WORKS</h1>
+      <p>光、粒子、軌跡の重なりから生まれる、リアルタイム表現の記録。</p>
+    </header>
+
+    <section class="works-grid" aria-label="作品一覧">
+      <article class="work-card">
+        <div class="work-visual">
+          <canvas class="work-preview" data-work-preview aria-hidden="true"></canvas>
+          <div class="work-preview-fallback" aria-hidden="true">
+            <span class="fallback-orbit"></span>
+            <span class="fallback-core"></span>
+          </div>
+          <span class="work-number">W.001</span>
+        </div>
+        <div class="work-content">
+          <div class="work-heading">
+            <div>
+              <p class="eyebrow">Unity VFX Study / 2026</p>
+              <h2>COSMO EFFECTS</h2>
+            </div>
+            <span class="work-arrow" aria-hidden="true">↗</span>
+          </div>
+          <p class="work-description">
+            星のきらめき、軌道、流星、星座のつながりを一つの空間へ構成したエフェクト研究。
+            紫から青へ移る光と、密度の異なる粒子によって宇宙の奥行きを探っています。
+          </p>
+          <ul class="work-tags" aria-label="使用技術">
+            <li>UNITY</li>
+            <li>SHADER</li>
+            <li>PARTICLE SYSTEM</li>
+            <li>REALTIME VFX</li>
+          </ul>
+        </div>
+      </article>
+    </section>
   </main>
-  <script src="assets/js/ocean-bg.js" defer></script>
+
+  <footer class="site-footer">
+    <span>© 2026 LEFLEF</span>
+    <span>SHADER / VFX EXPLORATION</span>
+  </footer>
 </body>
 </html>

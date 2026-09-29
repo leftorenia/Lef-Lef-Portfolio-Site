@@ -1,0 +1,8 @@
+{
+  "name": "lef-lef-portfolio-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

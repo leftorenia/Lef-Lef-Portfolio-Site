@@ -3,36 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title> れふれふ | Portfolio </title>
+  <meta name="description" content="ShaderとリアルタイムVFXを探究する、れふれふのポートフォリオ。">
+  <meta name="theme-color" content="#050509">
+  <title>PROFILE — れふれふ</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
+<body data-page="profile">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <div class="static-nebula" aria-hidden="true"></div>
+
   <header class="site-header">
-    <a class="brand" href="index.html">れふれふ | Portfolio</a>
-    <nav class="site-nav">
-      <a href="index.html" class="active">Home</a>
-      <a href="about.html">About</a>
-      <a href="works.html">Works</a>
-      <a href="contact.html">Contact</a>
+    <a class="brand" href="index.html" aria-label="れふれふ Profile">
+      <span class="brand-mark" aria-hidden="true">LF</span>
+      <span class="brand-name">LEFLEF</span>
+    </a>
+    <nav class="site-nav" aria-label="メインナビゲーション">
+      <a href="index.html" aria-current="page"><span aria-hidden="true" data-index="01"></span>PROFILE</a>
+      <a href="works.html"><span aria-hidden="true" data-index="02"></span>WORKS</a>
+      <a href="contact.html"><span aria-hidden="true" data-index="03"></span>CONTACT</a>
     </nav>
-    <div class="social-links">
-      <a href="https://github.com/leftorenia" target="_blank" rel="noopener" aria-label="GitHub">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      </a>
-      <a href="https://note.com/lef_torenia_lef" target="_blank" rel="noopener" aria-label="Note">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="0.5" y="0.5" width="15" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 11.5V4.5h1.6l3.8 5V4.5H12v7H10.4l-3.8-5v5H5z" fill="currentColor" stroke="none"/></svg>
-      </a>
-      <a href="https://x.com/lef_clear_lef" target="_blank" rel="noopener" aria-label="X">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 1l6 7-6 7h1.6l5.1-5.95L12.6 15H15L8.7 7.3 14.4 1h-1.6L8 6.45 3.4 1H1z"/></svg>
-      </a>
-    </div>
   </header>
-  <main>
-    <section class="hero">
-      <h1>れふれふ</h1>
-      <p class="tagline">Artist</p>
+
+  <main id="main-content" class="page-shell">
+    <section class="hero" aria-labelledby="profile-title">
+      <div class="hero-copy">
+        <p class="section-index"><span>01</span> FIELD 01</p>
+        <p class="eyebrow">REALTIME VISUAL STUDY</p>
+        <h1 id="profile-title">
+          <span class="display-name">LEFLEF</span>
+          <span class="jp-name">れふれふ</span>
+        </h1>
+        <p class="hero-role">Shader / VFX Explorer</p>
+        <p class="hero-intro">
+          光と動きの組み合わせから、まだ見たことのない空気をつくる。<br>
+          Shaderとリアルタイムエフェクトを中心に、表現を探究しています。
+        </p>
+        <a class="text-link" href="works.html">作品を見る <span aria-hidden="true">↗</span></a>
+      </div>
+
+      <div class="hero-orbit" aria-hidden="true">
+        <span class="orbit orbit-one"></span>
+        <span class="orbit orbit-two"></span>
+        <span class="orbit-core"></span>
+        <span class="orbit-star orbit-star-one"></span>
+        <span class="orbit-star orbit-star-two"></span>
+        <span class="orbit-star orbit-star-three"></span>
+      </div>
+    </section>
+
+    <section class="profile-section" aria-labelledby="about-title">
+      <div>
+        <p class="eyebrow">ABOUT THE EXPLORATION</p>
+        <h2 id="about-title">一瞬の光に、<br>世界の気配を。</h2>
+      </div>
+      <div class="profile-grid">
+        <p>
+          Unityを使ったShader・VFX制作を通して、色、粒子、軌跡、奥行きが生む感覚を研究しています。
+          技術と感性のあいだを行き来しながら、触れたくなるような視覚体験を目指しています。
+        </p>
+        <ul class="interest-list" aria-label="探究領域">
+          <li><span>01</span>SHADER</li>
+          <li><span>02</span>REALTIME VFX</li>
+          <li><span>03</span>UNITY</li>
+          <li><span>04</span>VISUAL STUDY</li>
+        </ul>
+      </div>
     </section>
   </main>
-  <script src="assets/js/ocean-bg.js" defer></script>
+
+  <footer class="site-footer">
+    <span>© 2026 LEFLEF</span>
+    <span>SHADER / VFX EXPLORATION</span>
+  </footer>
 </body>
 </html>
