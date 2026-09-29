@@ -45,6 +45,21 @@ test('style contract centers the masthead and generated Profile emblem', () => {
   assert.match(css, /\.profile-emblem-mark[^\{]*\{[^}]*place-items:\s*center/s);
 });
 
+test('style contract supports linked work cards and the detail layout', () => {
+  for (const selector of [
+    '.work-card-link',
+    '.work-detail-page',
+    '.work-detail-visual',
+    '.work-detail-grid',
+    '.work-detail-actions',
+  ]) {
+    assert.match(css, rule(selector), `missing CSS rule for ${selector}`);
+  }
+
+  assert.match(css, /\.work-card-link:focus-visible[^\{]*\{[^}]*(?:outline|border):/s);
+  assert.match(css, /\.work-detail-visual[^\{]*\{[^}]*aspect-ratio:/s);
+});
+
 test('style contract preserves keyboard and active-page affordances', () => {
   assert.match(css, /:focus-visible/);
   assert.match(css, /\.site-nav\s+a\[aria-current="page"\][^\{]*\{[^}]*border/s);

@@ -8,8 +8,11 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(join(root, file), 'utf8');
 const pageFiles = ['index.html', 'works.html', 'contact.html'];
+const detailFile = 'works/cosmo-effects/index.html';
 const pages = Object.fromEntries(pageFiles.map((file) => [file, read(file)]));
-const allHtml = [...Object.values(pages), read('about.html')].join('\n');
+const existingHtmlFiles = [...pageFiles, 'about.html', detailFile]
+  .filter((file) => existsSync(join(root, file)));
+const allHtml = existingHtmlFiles.map(read).join('\n');
 
 function navLabels(html) {
   const nav = html.match(/<nav\b[^>]*class="[^"]*site-nav[^"]*"[^>]*>([\s\S]*?)<\/nav>/i)?.[1] ?? '';
@@ -135,8 +138,38 @@ test('site structure loads the generated work preview only after the shared fiel
   assert.doesNotMatch(pages['contact.html'], /work-preview\.js/i);
 });
 
-test('the static work card does not imply an unavailable outbound action', () => {
-  assert.doesNotMatch(pages['works.html'], /class="work-arrow"/i);
+test('Cosmo Effects has a truthful static detail page', () => {
+  assert.ok(existsSync(join(root, detailFile)), 'missing Cosmo Effects detail page');
+  const detail = read(detailFile);
+
+  assert.match(detail, /<body\b[^>]*data-page="work-detail"/i);
+  assert.match(detail, /<title>COSMO EFFECTS — れふれふ<\/title>/i);
+  assert.match(detail, /Unity VFX Study/i);
+  assert.match(detail, /PERSONAL STUDY/i);
+  assert.match(detail, /<canvas\b[^>]*data-work-preview[^>]*aria-hidden="true"/i);
+  assert.match(detail, /class="[^"]*work-preview-fallback[^"]*"/i);
+  assert.doesNotMatch(detail, /client|employer|award|release|<img\b/i);
+});
+
+test('the real work card and nested detail page use resolvable relative navigation', () => {
+  const works = pages['works.html'];
+  assert.match(
+    works,
+    /<a\b[^>]*class="[^"]*\bwork-card-link\b[^"]*"[^>]*href="works\/cosmo-effects\/index\.html"[\s\S]*?<\/a>/i,
+  );
+  assert.match(works, /class="work-arrow"/i);
+
+  assert.ok(existsSync(join(root, detailFile)), 'missing Cosmo Effects detail page');
+  const detail = read(detailFile);
+  for (const destination of ['../../index.html', '../../works.html', '../../contact.html']) {
+    assert.match(detail, new RegExp(`href="${destination.replaceAll('.', '\\.')}"`, 'i'));
+  }
+
+  const fieldPosition = detail.indexOf('../../assets/js/cosmic-field.js');
+  const previewPosition = detail.indexOf('../../assets/js/work-preview.js');
+  assert.ok(fieldPosition >= 0);
+  assert.ok(previewPosition > fieldPosition);
+  assert.doesNotMatch(detail, /\b(?:href|src)="\//i);
 });
 
 test('repository policy keeps public assets local, resolvable, and image-free', () => {
@@ -148,7 +181,7 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
   assert.deepEqual(imageFiles, []);
 
   const publicSourceFiles = trackedFiles.filter((file) => (
-    /^(?:index|works|contact|about)\.html$/i.test(file)
+    /\.html$/i.test(file)
     || /^assets\/(?:css|js)\//i.test(file)
   ));
   for (const file of publicSourceFiles) {
@@ -160,12 +193,16 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
   for (const html of Object.values(pages)) {
     const nav = html.match(/<nav\b[^>]*class="[^"]*site-nav[^"]*"[^>]*>([\s\S]*?)<\/nav>/i)?.[1] ?? '';
     for (const match of nav.matchAll(/<a\b[^>]*href="([^"]+)"/gi)) navDestinations.add(match[1]);
+  }
 
+  for (const file of existingHtmlFiles) {
+    const html = read(file);
     for (const match of html.matchAll(/\b(?:href|src)="([^"]+)"/gi)) {
       const reference = match[1];
       if (/^(?:#|https?:|mailto:)/i.test(reference)) continue;
       const localPath = reference.split(/[?#]/, 1)[0];
-      assert.ok(existsSync(join(root, ...localPath.split('/'))), `missing local asset: ${reference}`);
+      const resolvedPath = join(root, dirname(file), ...localPath.split('/'));
+      assert.ok(existsSync(resolvedPath), `missing local asset from ${file}: ${reference}`);
     }
   }
 
