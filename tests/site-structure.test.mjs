@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverPublicHtmlFiles } from './helpers/public-html.mjs';
+import * as publicPolicy from './helpers/public-html.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(join(root, file), 'utf8');
@@ -258,6 +260,11 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
 
 test('repository policy documents preview, verification, motion, and image rules', () => {
   const readme = read('README.md');
+  for (const topic of [/Lunar Reverie/, /WebGL2/, /CSS[^\n]*(?:フォールバック|fallback)/i,
+    /Web Audio/, /SOUND OFF/, /START SOUND/, /SOUND ON/, /SOUND UNAVAILABLE/,
+    /(?:明示|クリック|操作)[^\n]*(?:生成|開始|再開)/, /参照サイト[^\n]*含め/]) {
+    assert.match(readme, topic);
+  }
   assert.match(readme, /npm test/);
   assert.match(readme, /python -m http\.server 4173/);
   assert.match(readme, /prefers-reduced-motion/);
@@ -269,4 +276,58 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.match(readme, /works\/cosmo-effects\/index\.html[^\n]*(?:コピー|複製)/i);
   assert.match(readme, /tests\/site-structure\.test\.mjs/);
   assert.match(readme, /(?:カード数|期待値)/);
+});
+
+test('recursive public references stay inside the GitHub Pages project and resolve locally', () => {
+  assert.equal(typeof publicPolicy.validatePublicReferences, 'function');
+  assert.deepEqual(publicPolicy.validatePublicReferences(root), []);
+});
+
+test('public pages declare a local vector favicon to prevent implicit root favicon requests', () => {
+  for (const file of existingHtmlFiles) {
+    const icon = [...read(file).matchAll(/<link\b[^>]*>/gi)].map(match => match[0])
+      .find(tag => getAttribute(tag, 'rel') === 'icon');
+    assert.ok(icon, `missing favicon declaration in ${file}`);
+    assert.equal(getAttribute(icon, 'type'), 'image/svg+xml');
+    const href = getAttribute(icon, 'href');
+    assert.match(href, /\.svg$/);
+    assert.ok(existsSync(join(root, dirname(file), href)), `missing favicon from ${file}`);
+  }
+});
+
+test('public reference policy catches nested imports, remote resources, media, and subpath escapes', () => {
+  assert.equal(typeof publicPolicy.validatePublicReferences, 'function');
+  const fixture = mkdtempSync(join(tmpdir(), 'lef-public-policy-'));
+  try {
+    mkdirSync(join(fixture, 'works', 'nested'), { recursive: true });
+    mkdirSync(join(fixture, 'assets'), { recursive: true });
+    writeFileSync(join(fixture, 'index.html'), '<a href="works/nested/index.html">Work</a>');
+    writeFileSync(join(fixture, 'works/nested/index.html'), '<script type="module" src="../../assets/main.js"></script>');
+    writeFileSync(join(fixture, 'assets/main.js'), "import './child.js'; export { x } from './child.js'; import('./child.js');");
+    writeFileSync(join(fixture, 'assets/child.js'), 'export const x = 1;');
+    assert.deepEqual(publicPolicy.validatePublicReferences(fixture), []);
+    const cases = [
+      ['works/nested/index.html', '<script src="/assets/main.js"></script>', /root-relative/],
+      ['works/nested/index.html', '<link href="https://fonts.example/font.css" rel="stylesheet">', /remote/],
+      ['works/nested/index.html', '<img src="https://example.com/a.png">', /remote/],
+      ['works/nested/index.html', '<a href="../../../escape.html">Escape</a>', /outside/],
+      ['works/nested/index.html', '<a href="../../%2e%2e%2fescape.html">Escape</a>', /outside/],
+      ['works/nested/index.html', "<script src='../../assets/missing.js'></script>", /missing/],
+      ['assets/child.js', "import './missing.js';", /missing/],
+      ['assets/child.js', "import {\n missing\n} from './missing.js';", /missing/],
+      ['assets/child.js', "export { x } from 'https://example.com/code.js';", /remote/],
+      ['assets/child.js', "import('/assets/code.js');", /root-relative/],
+      ['assets/child.js', "import 'unbundled-package';", /bare/],
+      ['assets/extra.css', '@font-face { src: url(https://example.com/font.woff2) }', /remote/],
+      ['assets/photo.webp', '', /media/],
+      ['assets/sound.wav', '', /media/],
+    ];
+    for (const [file, source, expected] of cases) {
+      const path = join(fixture, file);
+      const previous = existsSync(path) ? readFileSync(path, 'utf8') : null;
+      writeFileSync(path, source);
+      assert.match(publicPolicy.validatePublicReferences(fixture).join('\n'), expected, file);
+      if (previous === null) rmSync(path); else writeFileSync(path, previous);
+    }
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
 });
