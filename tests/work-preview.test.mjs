@@ -272,3 +272,37 @@ test('work preview boot is a no-op when no preview elements exist', () => {
   assert.equal(bootWorkPreviews(undefined, undefined), 0);
   assert.equal(bootWorkPreviews({ querySelectorAll: () => [] }, fakeWindow()), 0);
 });
+
+test('work preview draws the moonlit palette in its static frame', () => {
+  const colors = [];
+  const base = noopContext();
+  const context = new Proxy(base, {
+    get(target, property) {
+      if (property === 'createRadialGradient' || property === 'createLinearGradient') {
+        return () => ({ addColorStop(_position, color) { colors.push(color); } });
+      }
+      return target[property];
+    },
+    set(_target, property, value) {
+      if (['fillStyle', 'strokeStyle', 'shadowColor'].includes(property) && typeof value === 'string') {
+        colors.push(value);
+      }
+      return true;
+    },
+  });
+  const preview = createWorkPreview(fakeCanvas(context), {
+    windowTarget: fakeWindow(),
+    documentTarget: fakeDocument(),
+    reducedMotion: true,
+    random: () => 0.5,
+  });
+  try {
+    for (const rgb of ['40, 77, 134', '109, 145, 201', '190, 214, 246', '215, 196, 231']) {
+      assert.ok(colors.some(color => color.startsWith(`rgba(${rgb},`)), `missing rendered lunar color ${rgb}`);
+    }
+    assert.ok(!colors.some(color => /rgba\((?:146, 92, 255|162, 118, 255|104, 66, 213),/.test(color)),
+      'the static frame must not retain the previous neon violet clouds');
+  } finally {
+    preview.destroy();
+  }
+});

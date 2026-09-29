@@ -38,10 +38,10 @@ export function getPreviewMetrics({
 
 function makeParticle(random) {
   const colors = [
-    [196, 232, 255],
-    [145, 108, 255],
-    [224, 177, 255],
-    [255, 245, 196],
+    [190, 214, 246],
+    [109, 145, 201],
+    [215, 196, 231],
+    [238, 244, 255],
   ];
 
   return {
@@ -57,7 +57,7 @@ function makeParticle(random) {
 
 function drawBackdrop(context, width, height, time, animate) {
   const pulse = animate ? 0.86 + Math.sin(time * 0.00035) * 0.08 : 0.9;
-  const violet = context.createRadialGradient(
+  const cloud = context.createRadialGradient(
     width * 0.41,
     height * 0.51,
     0,
@@ -65,10 +65,10 @@ function drawBackdrop(context, width, height, time, animate) {
     height * 0.51,
     Math.max(width, height) * 0.48,
   );
-  violet.addColorStop(0, `rgba(162, 118, 255, ${0.13 * pulse})`);
-  violet.addColorStop(0.28, `rgba(104, 66, 213, ${0.075 * pulse})`);
-  violet.addColorStop(1, 'rgba(5, 5, 9, 0)');
-  context.fillStyle = violet;
+  cloud.addColorStop(0, `rgba(215, 196, 231, ${0.13 * pulse})`);
+  cloud.addColorStop(0.28, `rgba(40, 77, 134, ${0.075 * pulse})`);
+  cloud.addColorStop(1, 'rgba(3, 8, 21, 0)');
+  context.fillStyle = cloud;
   context.fillRect(0, 0, width, height);
 
   const blue = context.createRadialGradient(
@@ -79,8 +79,8 @@ function drawBackdrop(context, width, height, time, animate) {
     height * 0.26,
     Math.max(width, height) * 0.34,
   );
-  blue.addColorStop(0, 'rgba(43, 116, 220, 0.08)');
-  blue.addColorStop(1, 'rgba(5, 5, 9, 0)');
+  blue.addColorStop(0, 'rgba(109, 145, 201, 0.08)');
+  blue.addColorStop(1, 'rgba(3, 8, 21, 0)');
   context.fillStyle = blue;
   context.fillRect(0, 0, width, height);
 }
@@ -116,24 +116,24 @@ function drawOrbitalFocus(context, width, height, time, animate) {
   context.rotate(-0.28);
   context.beginPath();
   context.ellipse(0, 0, radius * 2.4 * pulse, radius * 0.74, 0, 0, Math.PI * 2);
-  context.strokeStyle = 'rgba(188, 232, 255, 0.34)';
+  context.strokeStyle = 'rgba(190, 214, 246, 0.34)';
   context.lineWidth = 0.75;
-  context.shadowColor = 'rgba(67, 141, 255, 0.42)';
+  context.shadowColor = 'rgba(109, 145, 201, 0.42)';
   context.shadowBlur = 12;
   context.stroke();
 
   context.rotate(1.06);
   context.beginPath();
   context.ellipse(0, 0, radius * 1.7, radius * 0.6, 0, 0, Math.PI * 2);
-  context.strokeStyle = 'rgba(146, 92, 255, 0.28)';
+  context.strokeStyle = 'rgba(215, 196, 231, 0.28)';
   context.stroke();
   context.restore();
 
   const glow = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 2.2);
-  glow.addColorStop(0, 'rgba(255, 255, 255, 0.88)');
-  glow.addColorStop(0.055, 'rgba(212, 228, 255, 0.48)');
-  glow.addColorStop(0.2, 'rgba(146, 92, 255, 0.2)');
-  glow.addColorStop(1, 'rgba(90, 54, 180, 0)');
+  glow.addColorStop(0, 'rgba(238, 244, 255, 0.88)');
+  glow.addColorStop(0.055, 'rgba(190, 214, 246, 0.48)');
+  glow.addColorStop(0.2, 'rgba(109, 145, 201, 0.2)');
+  glow.addColorStop(1, 'rgba(40, 77, 134, 0)');
   context.fillStyle = glow;
   context.beginPath();
   context.arc(centerX, centerY, radius * 2.2, 0, Math.PI * 2);
@@ -158,15 +158,15 @@ function drawConstellation(context, width, height, time, animate) {
     if (index === 0) context.moveTo(pointX, pointY);
     else context.lineTo(pointX, pointY);
   });
-  context.strokeStyle = `rgba(143, 103, 255, ${0.15 * pulse})`;
+  context.strokeStyle = `rgba(109, 145, 201, ${0.15 * pulse})`;
   context.lineWidth = 0.8;
   context.stroke();
 
   for (const [x, y] of points) {
     context.beginPath();
     context.arc(x * width, y * height, 1.45, 0, Math.PI * 2);
-    context.fillStyle = `rgba(208, 214, 255, ${0.52 * pulse})`;
-    context.shadowColor = 'rgba(146, 92, 255, 0.65)';
+    context.fillStyle = `rgba(190, 214, 246, ${0.52 * pulse})`;
+    context.shadowColor = 'rgba(215, 196, 231, 0.65)';
     context.shadowBlur = 6;
     context.fill();
   }
@@ -242,15 +242,15 @@ export function createWorkPreview(canvas, options = {}) {
     const tailX = headX - streak.tail;
     const tailY = headY + streak.tail * 0.38;
     const gradient = context.createLinearGradient(tailX, tailY, headX, headY);
-    gradient.addColorStop(0, 'rgba(67, 141, 255, 0)');
-    gradient.addColorStop(0.75, 'rgba(91, 168, 255, 0.35)');
-    gradient.addColorStop(1, 'rgba(232, 247, 255, 0.92)');
+    gradient.addColorStop(0, 'rgba(40, 77, 134, 0)');
+    gradient.addColorStop(0.75, 'rgba(109, 145, 201, 0.35)');
+    gradient.addColorStop(1, 'rgba(238, 244, 255, 0.92)');
     context.beginPath();
     context.moveTo(tailX, tailY);
     context.lineTo(headX, headY);
     context.strokeStyle = gradient;
     context.lineWidth = 1.15;
-    context.shadowColor = 'rgba(67, 141, 255, 0.7)';
+    context.shadowColor = 'rgba(190, 214, 246, 0.7)';
     context.shadowBlur = 9;
     context.stroke();
     context.shadowBlur = 0;
