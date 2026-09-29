@@ -382,3 +382,23 @@ for (const source of [
     } finally { rmSync(fixture, { recursive: true, force: true }); }
   });
 }
+
+for (const [file, source, expected] of [
+  ['index.html', `<p>It's my site</p><script type="module">import './missing.js';</script>`, ['index.html: missing ./missing.js']],
+  ['module.js', "export {x as export} from './missing.js';", ['module.js: missing ./missing.js']],
+  ['module.js', "const text = `${await import('./missing.js')}`;", ['module.js: missing ./missing.js']],
+  ['module.js', "const text = `outer ${`inner ${await import('./missing.js')}`} end`;", ['module.js: missing ./missing.js']],
+  ['module.js', "const text = `${({value: import('./missing.js')}).value}`;", ['module.js: missing ./missing.js']],
+  ['module.js', "export {x as import, y as export} from 'https://example.com/code.js';", ['module.js: remote or unsupported resource https://example.com/code.js']],
+  ['index.html', `<p>import './prose.js'; It's not code.</p><script type="application/json">"import './json.js'"</script><!-- <script type="module">import './comment.js';</script> --><script type="module">const s = "import './string.js'"; /* import './comment.js'; */ const t = \`import './template.js'\`;</script>`, []],
+  ['module.js', "const text = `import './text.js'; ${\"import './string.js'\"} ${/* import './comment.js'; */ 1}`;", []],
+  ['module.js', "const text = `escaped \\${import('./text.js')}`;", []],
+]) {
+  test(`policy scans executable code boundaries: ${source}`, () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'lef-code-boundaries-'));
+    try {
+      writeFileSync(join(fixture, file), source);
+      assert.deepEqual(publicPolicy.validatePublicReferences(fixture), expected);
+    } finally { rmSync(fixture, { recursive: true, force: true }); }
+  });
+}

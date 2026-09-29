@@ -38,10 +38,16 @@ export function discoverPublicHtmlFiles(root) {
 
 // Keep quoted values intact: a > inside an attribute does not close its tag.
 function* htmlTags(source) {
-  const starts = /<([a-z][\w-]*)\b/gi;
-  let match;
-  while ((match = starts.exec(source))) {
-    const start = starts.lastIndex;
+  let index = 0;
+  while ((index = source.indexOf('<', index)) >= 0) {
+    if (source.startsWith('<!--', index)) {
+      const end = source.indexOf('-->', index + 4);
+      index = end < 0 ? source.length : end + 3;
+      continue;
+    }
+    const match = /^<([a-z][\w-]*)\b/i.exec(source.slice(index));
+    if (!match) { index++; continue; }
+    const start = index + match[0].length;
     let quote = null;
     let end = start;
     for (; end < source.length; end++) {
@@ -50,8 +56,21 @@ function* htmlTags(source) {
       else if (char === '"' || char === "'") quote = char;
       else if (char === '>') break;
     }
-    yield { name: match[1].toLowerCase(), attributes: source.slice(start, end) };
-    starts.lastIndex = end + 1;
+    const name = match[1].toLowerCase();
+    const attributes = Object.fromEntries([...source.slice(start, end).matchAll(
+      /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g,
+    )].map(attr => [attr[1].toLowerCase(), attr[2] ?? attr[3] ?? attr[4] ?? '']));
+    index = end + 1;
+    let content = '';
+    if (name === 'script' || name === 'style') {
+      // HTML treats these as raw text; apparent tags in their bodies are not HTML.
+      const closing = new RegExp(`</${name}\\s*>`, 'gi');
+      closing.lastIndex = index;
+      const close = closing.exec(source);
+      content = source.slice(index, close?.index ?? source.length);
+      index = close ? closing.lastIndex : source.length;
+    }
+    yield { name, attributes, content };
   }
 }
 
@@ -60,44 +79,67 @@ function* htmlTags(source) {
 function moduleTokens(source) {
   const tokens = [];
   let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    if (/\s/.test(char)) { index++; continue; }
-    if (source.startsWith('//', index)) {
-      const end = source.indexOf('\n', index + 2);
-      index = end < 0 ? source.length : end + 1;
-      continue;
-    }
-    if (source.startsWith('/*', index)) {
-      const end = source.indexOf('*/', index + 2);
-      index = end < 0 ? source.length : end + 2;
-      continue;
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      const quote = char;
-      let value = '';
-      index++;
-      while (index < source.length && source[index] !== quote) {
-        if (source[index] === '\\') {
-          index++;
-          // Escaped quote/slash characters stay inside this literal token.
-          const escaped = source[index++];
-          value += ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', '0': '\0', '\n': '' })[escaped] ?? escaped;
-        } else value += source[index++];
-      }
-      index++;
-      tokens.push({ kind: quote === '`' ? 'template' : 'string', value });
-      continue;
-    }
-    if (/[a-z_$]/i.test(char)) {
-      const start = index++;
-      while (index < source.length && /[\w$]/.test(source[index])) index++;
-      tokens.push({ kind: 'word', value: source.slice(start, index) });
-      continue;
-    }
-    tokens.push({ kind: 'punctuation', value: char });
+  function template() {
+    tokens.push({ kind: 'template', value: '`' });
     index++;
+    while (index < source.length) {
+      if (source[index] === '\\') { index += 2; continue; }
+      if (source[index] === '`') { index++; break; }
+      if (source.startsWith('${', index)) {
+        index += 2;
+        tokens.push({ kind: 'punctuation', value: '{' });
+        scan(true);
+        tokens.push({ kind: 'punctuation', value: '}' });
+      } else index++;
+    }
+    tokens.push({ kind: 'template', value: '`' });
   }
+  function scan(interpolation = false) {
+    let braces = 0;
+    while (index < source.length) {
+      const char = source[index];
+      if (char === '}' && interpolation && braces === 0) { index++; return; }
+      if (/\s/.test(char)) { index++; continue; }
+      if (source.startsWith('//', index)) {
+        const end = source.indexOf('\n', index + 2);
+        index = end < 0 ? source.length : end + 1;
+        continue;
+      }
+      if (source.startsWith('/*', index)) {
+        const end = source.indexOf('*/', index + 2);
+        index = end < 0 ? source.length : end + 2;
+        continue;
+      }
+      if (char === '`') { template(); continue; }
+      if (char === '"' || char === "'") {
+        const quote = char;
+        let value = '';
+        index++;
+        while (index < source.length && source[index] !== quote) {
+          if (source[index] === '\\') {
+            index++;
+            // Escaped quote/slash characters stay inside this literal token.
+            const escaped = source[index++];
+            value += ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', '0': '\0', '\n': '' })[escaped] ?? escaped;
+          } else value += source[index++];
+        }
+        index++;
+        tokens.push({ kind: 'string', value });
+        continue;
+      }
+      if (/[a-z_$]/i.test(char)) {
+        const start = index++;
+        while (index < source.length && /[\w$]/.test(source[index])) index++;
+        tokens.push({ kind: 'word', value: source.slice(start, index) });
+        continue;
+      }
+      tokens.push({ kind: 'punctuation', value: char });
+      if (char === '{') braces++;
+      else if (char === '}') braces--;
+      index++;
+    }
+  }
+  scan();
   return tokens;
 }
 
@@ -117,11 +159,16 @@ function* moduleReferences(source) {
       continue;
     }
     if (next?.value === '.' || (token.value === 'export' && !['{', '*'].includes(next?.value))) continue;
+    let braces = 0;
     for (let cursor = index + 1; cursor < tokens.length; cursor++) {
       const candidate = tokens[cursor];
+      if (candidate.value === '{') braces++;
+      else if (candidate.value === '}') braces--;
+      if (braces !== 0) continue;
       if (candidate.value === ';' || (candidate.kind === 'word' && ['import', 'export'].includes(candidate.value))) break;
       if (candidate.kind === 'word' && candidate.value === 'from' && tokens[cursor + 1]?.kind === 'string') {
         yield tokens[cursor + 1].value;
+        index = cursor + 1;
         break;
       }
     }
@@ -156,14 +203,18 @@ export function validatePublicReferences(root, base = 'https://leftorenia.github
     const source = readFileSync(join(root, file), 'utf8');
     if (/\.html$/i.test(file)) {
       for (const tag of htmlTags(source)) {
-        for (const attr of tag.attributes.matchAll(/([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g)) {
-          const name = attr[1].toLowerCase();
+        for (const [name, value] of Object.entries(tag.attributes)) {
           if (name !== 'href' && name !== 'src') continue;
-          check(file, attr[2] ?? attr[3] ?? attr[4] ?? '', { navigation: tag.name === 'a' && name === 'href' });
+          check(file, value, { navigation: tag.name === 'a' && name === 'href' });
+        }
+        const type = (tag.attributes.type ?? '').trim().toLowerCase();
+        if (tag.name === 'script' && !Object.hasOwn(tag.attributes, 'src')
+          && ['', 'module', 'text/javascript', 'application/javascript'].includes(type)) {
+          for (const reference of moduleReferences(tag.content)) check(file, reference, { module: true });
         }
       }
     }
-    if (/\.(?:m?js|html)$/i.test(file)) {
+    if (/\.m?js$/i.test(file)) {
       for (const reference of moduleReferences(source)) check(file, reference, { module: true });
     }
     if (/\.(?:css|html)$/i.test(file)) {
