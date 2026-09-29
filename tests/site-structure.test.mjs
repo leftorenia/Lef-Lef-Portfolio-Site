@@ -239,4 +239,9 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.match(readme, /python -m http\.server 4173/);
   assert.match(readme, /prefers-reduced-motion/);
   assert.match(readme, /参考画像[^\n]*(?:含め|使用し)/);
+  assert.match(readme, /## Adding a work/);
+  assert.match(readme, /works\/<slug>\/index\.html/);
+  assert.match(readme, /COMING SOON/i);
+  assert.match(readme, /Coming Soon[^\n]*(?:置き換|置換)/i);
+  assert.match(readme, /works\/cosmo-effects\/index\.html[^\n]*(?:コピー|複製)/i);
 });
