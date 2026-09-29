@@ -331,3 +331,54 @@ test('public reference policy catches nested imports, remote resources, media, a
     }
   } finally { rmSync(fixture, { recursive: true, force: true }); }
 });
+
+for (const [source, expected] of [
+  ["import'./missing.js'", 'missing ./missing.js'],
+  ["import{x}from'./missing.js'", 'missing ./missing.js'],
+  ["export{x}from'https://example.com/code.js'", 'remote or unsupported resource https://example.com/code.js'],
+  ["import/* comment */ './missing.js'", 'missing ./missing.js'],
+  ["import { x } from './missing.js';", 'missing ./missing.js'],
+  ["export { x } from './missing.js';", 'missing ./missing.js'],
+  ["export/* comment */*/* comment */from/* comment */'./missing.js';", 'missing ./missing.js'],
+  ["import('./missing.js');", 'missing ./missing.js'],
+  ["import/* comment */(/* comment */'./missing.js'/* comment */);", 'missing ./missing.js'],
+  ["import// comment\n'./missing.js';", 'missing ./missing.js'],
+]) {
+  test(`module policy resolves literal syntax: ${source}`, () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'lef-module-policy-'));
+    try {
+      writeFileSync(join(fixture, 'module.js'), source);
+      assert.deepEqual(publicPolicy.validatePublicReferences(fixture), [`module.js: ${expected}`]);
+    } finally { rmSync(fixture, { recursive: true, force: true }); }
+  });
+}
+
+test('module policy ignores comments, ordinary strings, and genuinely computed imports', () => {
+  const fixture = mkdtempSync(join(tmpdir(), 'lef-module-policy-'));
+  try {
+    writeFileSync(join(fixture, 'module.js'), `
+      // import './missing-comment.js';
+      /* export { x } from './missing-comment.js'; */
+      const example = "import './missing-example.js'";
+      const template = \`import './missing-template.js'\`;
+      import('./computed-' + name + '.js');
+      import(moduleName);
+    `);
+    assert.deepEqual(publicPolicy.validatePublicReferences(fixture), []);
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
+});
+
+for (const source of [
+  '<script src="https://example.com/code.js"></script>',
+  '<script data-label="a > b" src="https://example.com/code.js"></script>',
+  "<script data-label='a > b' src='https://example.com/code.js'></script>",
+  '<link data-label="a > b" href="https://example.com/code.js">',
+]) {
+  test(`HTML policy reads references after quoted greater-than: ${source}`, () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'lef-html-policy-'));
+    try {
+      writeFileSync(join(fixture, 'index.html'), source);
+      assert.deepEqual(publicPolicy.validatePublicReferences(fixture), ['index.html: remote or unsupported resource https://example.com/code.js']);
+    } finally { rmSync(fixture, { recursive: true, force: true }); }
+  });
+}
