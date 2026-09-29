@@ -42,12 +42,23 @@ test('style contract includes every page layout hook', () => {
   assert.match(css, /#lunar-field[^\{]*\{[^}]*pointer-events:\s*none/s);
 });
 
-test('style contract uses a one-row masthead and generated Profile emblem', () => {
+test('style contract uses a one-row masthead and circular avatar marks', () => {
   assert.match(css, /\.site-header[^\{]*\{[^}]*flex-direction:\s*row/s);
   assert.match(css, /\.site-header[^\{]*\{[^}]*justify-content:\s*space-between/s);
   assert.match(css, /\.hero[^\{]*\{[^}]*grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(0,\s*3fr\)/s);
   assert.match(css, /\.profile-emblem[^\{]*\{[^}]*aspect-ratio:\s*1/s);
-  assert.match(css, /\.profile-emblem-mark[^\{]*\{[^}]*place-items:\s*center/s);
+  const compactMark = css.match(/\.brand-mark\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(compactMark, /width:\s*2\.2rem/);
+  assert.match(compactMark, /height:\s*2\.2rem/);
+  assert.match(compactMark, /border-radius:\s*50%/);
+  assert.match(compactMark, /object-fit:\s*cover/);
+
+  const centralMark = css.match(/\.profile-emblem-mark\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(centralMark, /width:\s*77\.5%/);
+  assert.match(centralMark, /height:\s*auto/, 'intrinsic image attributes must not stretch the central circle');
+  assert.match(centralMark, /aspect-ratio:\s*1/);
+  assert.match(centralMark, /border-radius:\s*50%/);
+  assert.match(centralMark, /object-fit:\s*cover/);
 });
 
 test('style contract supports linked work cards and the detail layout', () => {
@@ -104,6 +115,12 @@ test('style contract has mobile and reduced-motion fallbacks', () => {
 const tabletCss = css.split('@media (max-width: 1099px)')[1].split('@media (max-width: 719px)')[0];
 const mobileCss = css.split('@media (max-width: 719px)')[1].split('@media (max-width: 420px)')[0];
 const reducedCss = css.split('@media (prefers-reduced-motion: reduce)')[1];
+
+test('compact header keeps its original avatar diameter', () => {
+  const compactMark = mobileCss.match(/\.brand-mark\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(compactMark, /width:\s*1\.7rem/);
+  assert.match(compactMark, /height:\s*1\.7rem/);
+});
 
 test('Profile retains its 40/60 celestial composition until the compact breakpoint', () => {
   assert.match(css, /\.hero\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(0,\s*3fr\)/s);

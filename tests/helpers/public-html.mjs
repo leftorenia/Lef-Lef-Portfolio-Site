@@ -9,6 +9,10 @@ const NON_PUBLIC_DIRECTORIES = new Set([
   'tests',
 ]);
 
+const APPROVED_MEDIA_FILES = new Set([
+  'assets/images/lef-lef-avatar.png',
+]);
+
 function discoverPublicFiles(root) {
   const files = [];
 
@@ -247,15 +251,17 @@ export function validatePublicReferences(root, base = 'https://leftorenia.github
     if (module && !/^\.\.?\//.test(ref)) { issues.push(`${file}: bare module ${ref}`); return; }
     const url = new URL(ref, new URL(file, base));
     if (!url.href.startsWith(base)) { issues.push(`${file}: outside project ${ref}`); return; }
-    if (media.test(ref)) issues.push(`${file}: forbidden media ${ref}`);
     const path = decodeURIComponent(url.pathname.slice(new URL(base).pathname.length));
     const resolved = resolve(root, path);
     const local = relative(root, resolved);
     if (local.startsWith('..') || isAbsolute(local)) { issues.push(`${file}: outside repository ${ref}`); return; }
+    if (media.test(ref) && !APPROVED_MEDIA_FILES.has(path.replaceAll('\\', '/'))) {
+      issues.push(`${file}: forbidden media ${ref}`);
+    }
     if (!existsSync(resolved)) issues.push(`${file}: missing ${ref}`);
   }
   for (const file of discoverPublicFiles(root)) {
-    if (media.test(file)) issues.push(`${file}: forbidden media file`);
+    if (media.test(file) && !APPROVED_MEDIA_FILES.has(file)) issues.push(`${file}: forbidden media file`);
     if (!/\.(?:html|css|m?js)$/i.test(file)) continue;
     const source = readFileSync(join(root, file), 'utf8');
     if (/\.html$/i.test(file)) {

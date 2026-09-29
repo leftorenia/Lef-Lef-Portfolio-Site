@@ -59,7 +59,10 @@ test('site structure presents the same identity before navigation', () => {
 
     assert.ok(brandPosition >= 0, `missing brand in ${file}`);
     assert.ok(navPosition > brandPosition, `navigation must follow brand in ${file}`);
-    assert.match(header, /class="brand-mark"[^>]*>LF<\/span>/i);
+    const brandMark = header.match(/<img\b[^>]*class="brand-mark"[^>]*>/i)?.[0] ?? '';
+    assert.ok(brandMark, `missing avatar brand mark in ${file}`);
+    assert.equal(getAttribute(brandMark, 'src'), 'assets/images/lef-lef-avatar.png');
+    assert.equal(getAttribute(brandMark, 'alt'), '');
     assert.match(header, /class="brand-name"[^>]*>LEFLEF<\/span>/i);
   }
 });
@@ -84,12 +87,18 @@ test('all primary pages expose Lunar Reverie controls and relative modules', () 
   assert.match(pages['index.html'], /COSMO EFFECTS/i);
 });
 
-test('profile uses a generated identity emblem instead of an image', () => {
+test('profile uses the approved avatar for its compact and central identity marks', () => {
   const profile = pages['index.html'];
 
   assert.equal((profile.match(/class="profile-emblem"/gi) ?? []).length, 1);
-  assert.match(profile, /class="[^"]*\bprofile-emblem-mark\b[^"]*"[^>]*>LF<\/span>/i);
-  assert.doesNotMatch(profile, /<img\b/i);
+  const centralMark = profile.match(/<img\b[^>]*class="profile-emblem-mark"[^>]*>/i)?.[0] ?? '';
+  assert.ok(centralMark, 'missing central avatar');
+  assert.equal(getAttribute(centralMark, 'src'), 'assets/images/lef-lef-avatar.png');
+  assert.equal(getAttribute(centralMark, 'alt'), '');
+
+  const detailBrand = read(detailFile).match(/<img\b[^>]*class="brand-mark"[^>]*>/i)?.[0] ?? '';
+  assert.equal(getAttribute(detailBrand, 'src'), '../../assets/images/lef-lef-avatar.png');
+  assert.equal(getAttribute(detailBrand, 'alt'), '');
 });
 
 test('site structure contains truthful profile, work, and contact content', () => {
@@ -135,8 +144,14 @@ test('site structure preserves the old About URL with a Profile fallback', () =>
   assert.match(about, /<a\b[^>]*href="index\.html"/i);
 });
 
-test('site structure never embeds the supplied reference image', () => {
-  assert.doesNotMatch(allHtml, /<img\b|Cosmo_effects\.png|assets\/img\//i);
+test('site structure embeds no raster image except the approved avatar', () => {
+  const imageTags = [...allHtml.matchAll(/<img\b[^>]*>/gi)].map(match => match[0]);
+  assert.equal(imageTags.length, 5);
+  for (const tag of imageTags) {
+    assert.match(getAttribute(tag, 'src'), /(?:^|\.\.\/\.\.\/)assets\/images\/lef-lef-avatar\.png$/);
+    assert.equal(getAttribute(tag, 'alt'), '');
+  }
+  assert.doesNotMatch(allHtml, /Cosmo_effects\.png|assets\/img\//i);
 });
 
 test('site structure loads the shared lunar shell without the legacy ocean script', () => {
@@ -170,7 +185,7 @@ test('Cosmo Effects has a truthful static detail page', () => {
   assert.match(detail, /PERSONAL STUDY/i);
   assert.match(detail, /<canvas\b[^>]*data-work-preview[^>]*aria-hidden="true"/i);
   assert.match(detail, /class="[^"]*work-preview-fallback[^"]*"/i);
-  assert.doesNotMatch(detail, /client|employer|award|release|<img\b/i);
+  assert.doesNotMatch(detail, /client|employer|award|release/i);
 });
 
 test('the real work card and nested detail page use resolvable relative navigation', () => {
@@ -215,13 +230,13 @@ test('Works exposes one real project and six inert future slots', () => {
   }
 });
 
-test('repository policy keeps public assets local, resolvable, and image-free', () => {
+test('repository policy keeps public assets local and limits raster media to the approved avatar', () => {
   const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
     .toString('utf8')
     .split('\0')
     .filter(Boolean);
   const imageFiles = trackedFiles.filter((file) => /\.(?:png|jpe?g|webp|gif)$/i.test(file));
-  assert.deepEqual(imageFiles, []);
+  assert.deepEqual(imageFiles, ['assets/images/lef-lef-avatar.png']);
   assert.deepEqual(trackedFiles.filter((file) => /\.(?:mp3|m4a|wav|ogg)$/i.test(file)), []);
   assert.doesNotMatch(allHtml, /<(?:audio|video)\b/i);
 
@@ -258,6 +273,20 @@ test('repository policy keeps public assets local, resolvable, and image-free', 
   );
 });
 
+test('public reference policy permits only the approved local avatar raster', () => {
+  const fixture = mkdtempSync(join(tmpdir(), 'lef-avatar-policy-'));
+  try {
+    mkdirSync(join(fixture, 'assets', 'images'), { recursive: true });
+    writeFileSync(join(fixture, 'assets', 'images', 'lef-lef-avatar.png'), 'approved avatar fixture');
+    writeFileSync(join(fixture, 'index.html'), '<img src="assets/images/lef-lef-avatar.png" alt="">');
+    assert.deepEqual(publicPolicy.validatePublicReferences(fixture), []);
+
+    writeFileSync(join(fixture, 'assets', 'images', 'extra.png'), 'unapproved image fixture');
+    writeFileSync(join(fixture, 'index.html'), '<img src="assets/images/extra.png" alt="">');
+    assert.match(publicPolicy.validatePublicReferences(fixture).join('\n'), /forbidden media/);
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
+});
+
 test('repository policy documents preview, verification, motion, and image rules', () => {
   const readme = read('README.md');
   for (const topic of [/Lunar Reverie/, /WebGL2/, /CSS[^\n]*(?:フォールバック|fallback)/i,
@@ -269,6 +298,8 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.match(readme, /python -m http\.server 4173/);
   assert.match(readme, /prefers-reduced-motion/);
   assert.match(readme, /参考画像[^\n]*(?:含め|使用し)/);
+  assert.match(readme, /assets\/images\/lef-lef-avatar\.png/);
+  assert.doesNotMatch(readme, /ラスター画像と音声ファイルは追加しません/);
   assert.match(readme, /## Adding a work/);
   assert.match(readme, /works\/<slug>\/index\.html/);
   assert.match(readme, /COMING SOON/i);
