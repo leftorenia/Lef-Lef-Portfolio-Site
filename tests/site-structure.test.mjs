@@ -386,6 +386,10 @@ for (const source of [
 for (const [file, source, expected] of [
   ['index.html', `<p>It's my site</p><script type="module">import './missing.js';</script>`, ['index.html: missing ./missing.js']],
   ['module.js', "export {x as export} from './missing.js';", ['module.js: missing ./missing.js']],
+  ['module.js', 'import { "}" as x } from "./missing.js";', ['module.js: missing ./missing.js']],
+  ['module.js', 'export { x as "{" } from "./missing.js";', ['module.js: missing ./missing.js']],
+  ['module.js', 'import { "ordinary-name" as x } from "./missing.js";', ['module.js: missing ./missing.js']],
+  ['module.js', 'export { x as "ordinary-name" } from "./missing.js";', ['module.js: missing ./missing.js']],
   ['module.js', "const text = `${await import('./missing.js')}`;", ['module.js: missing ./missing.js']],
   ['module.js', "const text = `outer ${`inner ${await import('./missing.js')}`} end`;", ['module.js: missing ./missing.js']],
   ['module.js', "const text = `${({value: import('./missing.js')}).value}`;", ['module.js: missing ./missing.js']],

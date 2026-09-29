@@ -162,8 +162,10 @@ function* moduleReferences(source) {
     let braces = 0;
     for (let cursor = index + 1; cursor < tokens.length; cursor++) {
       const candidate = tokens[cursor];
-      if (candidate.value === '{') braces++;
-      else if (candidate.value === '}') braces--;
+      if (candidate.kind === 'punctuation') {
+        if (candidate.value === '{') braces++;
+        else if (candidate.value === '}') braces--;
+      }
       if (braces !== 0) continue;
       if (candidate.value === ';' || (candidate.kind === 'word' && ['import', 'export'].includes(candidate.value))) break;
       if (candidate.kind === 'word' && candidate.value === 'from' && tokens[cursor + 1]?.kind === 'string') {
