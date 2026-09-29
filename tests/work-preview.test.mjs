@@ -141,6 +141,27 @@ test('work preview renders once without scheduling frames in reduced motion', ()
   assert.doesNotThrow(() => preview.destroy());
 });
 
+test('work preview hides the fallback in any initialized preview container', () => {
+  const fallback = { style: { opacity: '0.9' } };
+  const canvas = fakeCanvas();
+  canvas.parentElement = {
+    querySelector(selector) {
+      assert.equal(selector, '.work-preview-fallback');
+      return fallback;
+    },
+  };
+
+  const preview = createWorkPreview(canvas, {
+    windowTarget: fakeWindow(),
+    documentTarget: fakeDocument(),
+    reducedMotion: true,
+    random: () => 0.5,
+  });
+
+  assert.equal(fallback.style.opacity, '0');
+  preview.destroy();
+});
+
 test('work preview keeps CSS sizing responsive across live viewport changes', () => {
   let resizeHandler;
   const layout = { width: 900, height: 520 };

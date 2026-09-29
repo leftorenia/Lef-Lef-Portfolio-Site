@@ -329,7 +329,8 @@ export function createWorkPreview(canvas, options = {}) {
 
   resize();
   renderStatic();
-  const fallback = canvas.closest?.('.work-visual')?.querySelector?.('.work-preview-fallback');
+  const fallback = canvas.parentElement?.querySelector?.('.work-preview-fallback')
+    ?? canvas.closest?.('.work-visual, .work-detail-visual')?.querySelector?.('.work-preview-fallback');
   if (fallback?.style) fallback.style.opacity = '0';
   windowTarget?.addEventListener?.('resize', onResize, { passive: true });
   documentTarget?.addEventListener?.('visibilitychange', onVisibilityChange);

@@ -4,14 +4,14 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { discoverPublicHtmlFiles } from './helpers/public-html.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(join(root, file), 'utf8');
 const pageFiles = ['index.html', 'works.html', 'contact.html'];
 const detailFile = 'works/cosmo-effects/index.html';
 const pages = Object.fromEntries(pageFiles.map((file) => [file, read(file)]));
-const existingHtmlFiles = [...pageFiles, 'about.html', detailFile]
-  .filter((file) => existsSync(join(root, file)));
+const existingHtmlFiles = discoverPublicHtmlFiles(root);
 const allHtml = existingHtmlFiles.map(read).join('\n');
 
 function navLabels(html) {
@@ -244,4 +244,6 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.match(readme, /COMING SOON/i);
   assert.match(readme, /Coming Soon[^\n]*(?:置き換|置換)/i);
   assert.match(readme, /works\/cosmo-effects\/index\.html[^\n]*(?:コピー|複製)/i);
+  assert.match(readme, /tests\/site-structure\.test\.mjs/);
+  assert.match(readme, /(?:カード数|期待値)/);
 });
