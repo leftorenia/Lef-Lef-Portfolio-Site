@@ -107,23 +107,44 @@ test('profile uses the approved avatar for its compact and central identity mark
 
 test('site structure contains truthful profile, work, and contact content', () => {
   assert.match(pages['index.html'], /Shader \/ VFX Artist/);
-  for (const label of ['SHADER', 'REALTIME VFX', 'UNITY', 'VISUAL STUDY']) {
-    assert.match(pages['index.html'], new RegExp(label));
-  }
+  assert.match(pages['index.html'], /Shader・リアルタイムVFX・XR表現/);
+  assert.doesNotMatch(pages['index.html'], /一瞬の光に|ABOUT THE EXPLORATION|interest-list/i);
 
   assert.match(pages['works.html'], /COSMO EFFECTS/);
   assert.match(pages['works.html'], /Unity VFX Study/);
   assert.match(pages['works.html'], /<canvas\b[^>]*data-work-preview[^>]*aria-hidden="true"/i);
-  assert.match(pages['contact.html'], /mailto:leftorenia@gmail\.com/);
+  assert.match(pages['contact.html'], /XのDM/);
+  assert.doesNotMatch(pages['contact.html'], /mailto:|leftorenia@gmail\.com/i);
   assert.doesNotMatch(allHtml, /YOUR NAME|作品を準備中|依頼受付中/i);
+});
+
+test('profile exposes an extensible platform grid with the approved destinations', () => {
+  const profile = pages['index.html'];
+  assert.match(profile, /class="profile-socials"/i);
+  for (const [label, href] of [
+    ['GitHub', 'https://github.com/leftorenia'],
+    ['note', 'https://note.com/lef_torenia_lef'],
+    ['X', 'https://x.com/lef_torenia_lef'],
+    ['VRChat', 'https://vrchat.com/home/user/usr_58a4e42c-bc5c-4197-9aec-a25c45fd87c5'],
+  ]) {
+    assert.match(profile, new RegExp(`<a\\b[^>]*href="${href.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"[^>]*>[\\s\\S]*?${label}`, 'i'));
+  }
+  assert.equal((profile.match(/class="profile-social-link"/gi) ?? []).length, 4);
+});
+
+test('Contact directs inquiries only to the approved X profile', () => {
+  const contact = pages['contact.html'];
+  const outbound = [...contact.matchAll(/<a\b[^>]*href="(https?:[^\"]+)"[^>]*>/gi)].map(match => match[1]);
+  assert.deepEqual(outbound, ['https://x.com/lef_torenia_lef']);
+  assert.match(contact, /XのDMからご連絡ください/);
 });
 
 test('site structure restricts outbound links to verified destinations', () => {
   const allowed = new Set([
-    'mailto:leftorenia@gmail.com',
     'https://github.com/leftorenia',
-    'https://x.com/lef_clear_lef',
     'https://note.com/lef_torenia_lef',
+    'https://x.com/lef_torenia_lef',
+    'https://vrchat.com/home/user/usr_58a4e42c-bc5c-4197-9aec-a25c45fd87c5',
   ]);
 
   const tags = [...allHtml.matchAll(/<a\b[^>]*>/gi)].map((match) => match[0]);
