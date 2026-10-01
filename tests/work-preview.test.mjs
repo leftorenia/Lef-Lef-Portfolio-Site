@@ -100,7 +100,7 @@ function interactivePreviewFixture({ reducedMotion = false } = {}) {
   return { preview, listeners, properties, emit, changeMotion: matches => motionHandler({ matches }) };
 }
 
-test('linked preview reveals moonlight at the pointer location using passive input', () => {
+test('linked preview reveals light at the pointer location using passive input', () => {
   const f = interactivePreviewFixture();
   f.emit('pointermove');
   assert.equal(f.properties.get('--work-pointer-x'), '25%');
@@ -351,7 +351,7 @@ test('work preview boot is a no-op when no preview elements exist', () => {
   assert.equal(bootWorkPreviews({ querySelectorAll: () => [] }, fakeWindow()), 0);
 });
 
-test('work preview draws the moonlit palette in its static frame', () => {
+test('work preview draws the cool luminous palette in its static frame', () => {
   const colors = [];
   const base = noopContext();
   const context = new Proxy(base, {

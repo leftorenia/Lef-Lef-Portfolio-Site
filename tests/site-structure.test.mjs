@@ -83,8 +83,12 @@ test('all primary pages expose Lunar Reverie and omit the removed ambient contro
     assert.match(html, /lunar-field\.js/i);
     assert.doesNotMatch(html, /cosmic-field\.js/i);
   }
-  assert.match(pages['index.html'], /class="hero-status"/i);
-  assert.match(pages['index.html'], /COSMO EFFECTS/i);
+});
+
+test('profile omits the removed featured-work and scroll status strip', () => {
+  const profile = pages['index.html'];
+  assert.doesNotMatch(profile, /hero-status|hero-featured|hero-scroll/i);
+  assert.doesNotMatch(profile, /FEATURED WORK|SCROLL TO EXPLORE/i);
 });
 
 test('profile uses the approved avatar for its compact and central identity marks', () => {

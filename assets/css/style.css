@@ -11,7 +11,6 @@
   --color-ice: #bed6f6;
   --color-pink: #d7c4e7;
   --color-warm: #f4d3c7;
-  --color-moonlight: #6d91c9;
   --color-line: rgba(210, 225, 255, 0.18);
   --color-line-strong: rgba(210, 225, 255, 0.32);
   --font-display: "Segoe UI Variable Display", "Yu Gothic UI", "Hiragino Sans", sans-serif;
@@ -107,26 +106,6 @@ a {
     radial-gradient(ellipse at 89% 63%, rgba(109, 145, 201, 0.26), transparent 34%),
     radial-gradient(ellipse at 65% 75%, rgba(17, 40, 85, 0.82), transparent 48%),
     linear-gradient(135deg, #08152d, #030815 75%);
-}
-
-.lunar-fallback::before {
-  position: absolute;
-  top: 22%;
-  left: 72%;
-  width: clamp(4.5rem, 9vw, 8.5rem);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  box-shadow: -0.7rem 0 0 -0.35rem rgba(238, 244, 255, 0.72), -1.6rem 0 3.5rem rgba(190, 214, 246, 0.3);
-  content: "";
-  transform: rotate(-22deg);
-}
-
-body:not([data-page="profile"]) .lunar-fallback::before {
-  opacity: 0.28;
-}
-
-body[data-page="work-detail"] .lunar-fallback::before {
-  display: none;
 }
 
 body[data-page="contact"] .static-nebula {
@@ -386,61 +365,6 @@ body[data-page="contact"] .static-nebula {
   filter: drop-shadow(0 0 4rem rgba(109, 145, 201, 0.14));
 }
 
-.hero-moon-note {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-}
-
-.hero-status {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
-  gap: 1.5rem;
-  min-height: 5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-line);
-}
-
-.hero-status > * {
-  min-width: 0;
-}
-
-.hero-featured {
-  justify-self: start;
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  letter-spacing: 0.07em;
-  text-decoration: none;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--color-line);
-}
-
-.hero-featured span:first-child {
-  display: block;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-}
-
-.hero-featured:hover {
-  color: var(--color-ice);
-}
-
-.hero-scroll {
-  justify-self: end;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  letter-spacing: 0.08em;
-  text-align: right;
-}
-
 .profile-emblem::before,
 .profile-emblem::after {
   position: absolute;
@@ -625,6 +549,11 @@ body[data-page="contact"] .static-nebula {
 .interest-list span {
   color: var(--color-violet);
   font-size: 0.58rem;
+}
+
+.works-page {
+  width: 90vw;
+  padding-inline: 0;
 }
 
 .works-page,
@@ -1206,8 +1135,7 @@ body[data-page="contact"] .static-nebula {
   }
 
   .brand,
-  .text-link,
-  .hero-featured {
+  .text-link {
     min-height: 2.75rem;
   }
 
@@ -1231,18 +1159,6 @@ body[data-page="contact"] .static-nebula {
     min-height: calc(100svh - var(--header-height));
     gap: 3.5rem;
     padding: 4rem 0 5rem;
-  }
-
-  .hero-status {
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: 1.25rem;
-  }
-
-  .hero-featured,
-  .hero-scroll {
-    justify-self: start;
-    text-align: left;
   }
 
   .section-index {
