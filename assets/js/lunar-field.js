@@ -3,9 +3,9 @@ import { VERTEX_SHADER_SOURCE, createFragmentShaderSource } from './lunar-shader
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 const QUALITY = {
-  high: { renderScale: 0.75, octaves: 4, splatCount: 12 },
-  medium: { renderScale: 0.625, octaves: 3, splatCount: 8 },
-  low: { renderScale: 0.5, octaves: 2, splatCount: 4 },
+  high: { renderScale: 0.75, octaves: 4, splatCount: 12, meteorCount: 5 },
+  medium: { renderScale: 0.625, octaves: 3, splatCount: 8, meteorCount: 4 },
+  low: { renderScale: 0.5, octaves: 2, splatCount: 4, meteorCount: 3 },
 };
 
 export function getSceneMetrics({ width = 0, height = 0, devicePixelRatio = 1, mobile, reducedMotion = false, quality } = {}) {
@@ -34,7 +34,7 @@ export function getPagePreset(pageMode) {
 }
 
 // Coordinates use the DOM convention (top-left origin); time is in milliseconds.
-export function createPointerTrail({ limit = 12, decayMs = 2500 } = {}) {
+export function createPointerTrail({ limit = 12, decayMs = 2000 } = {}) {
   const capacity = clamp(Math.floor(finite(limit, 12)), 1, 12);
   const duration = Math.max(1, finite(decayMs, 2500));
   let samples = [];
@@ -122,7 +122,7 @@ function createWebGLRenderer(canvas, metrics) {
         positions.fill(0);
         motions.fill(0);
         frame.trail.slice(-metrics.splatCount).forEach((point, index) => {
-          positions.set([point.x, point.y, point.strength, 220], index * 4);
+          positions.set([point.x, point.y, point.strength, 100], index * 4);
           motions.set([point.dx, point.dy, point.age, 0], index * 4);
         });
         gl.useProgram(program);

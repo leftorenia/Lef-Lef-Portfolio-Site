@@ -76,6 +76,11 @@ test('style contract supports linked work cards and the detail layout', () => {
   assert.match(css, /\.work-detail-visual[^\{]*\{[^}]*aspect-ratio:/s);
 });
 
+test('Works list thumbnails share a 16:9 frame', () => {
+  assert.match(css, /\.work-visual\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
+  assert.match(css, /\.work-preview\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
+});
+
 test('style contract keeps the Works grid responsive and future-proof', () => {
   assert.match(
     css,
