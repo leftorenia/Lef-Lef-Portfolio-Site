@@ -13,7 +13,7 @@ function rule(selector) {
 }
 
 test('style contract uses the approved Lunar Reverie palette', () => {
-  for (const color of ['#030815', '#08152d', '#284d86', '#6d91c9', '#bed6f6', '#eef4ff']) {
+  for (const color of ['#030815', '#08152d', '#284d86', '#bed6f6', '#eef4ff']) {
     assert.match(css, new RegExp(color, 'i'));
   }
   assert.match(css, /--font-display:/i);
@@ -30,9 +30,6 @@ test('style contract includes every page layout hook', () => {
     '.contact-links',
     '.skip-link',
     '.static-nebula',
-    '.lunar-fallback',
-    '.hero-status',
-    '.hero-moon-note',
   ]) {
     assert.match(css, rule(selector), `missing CSS rule for ${selector}`);
   }
@@ -79,6 +76,14 @@ test('style contract supports linked work cards and the detail layout', () => {
 test('Works list thumbnails share a 16:9 frame', () => {
   assert.match(css, /\.work-visual\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
   assert.match(css, /\.work-preview\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
+});
+
+test('Works page uses about ninety percent of the viewport without a fixed desktop cap', () => {
+  const worksPage = css.match(/\.works-page\s*\{[^}]*\}/s)?.[0] ?? '';
+  const viewportWidth = Number(worksPage.match(/width:\s*([0-9.]+)vw/)?.[1]);
+  assert.ok(viewportWidth >= 88 && viewportWidth <= 92, 'Works should leave roughly five percent margin on each side');
+  assert.match(worksPage, /padding-inline:\s*0/);
+  assert.doesNotMatch(worksPage, /max-width:\s*[0-9.]+(?:px|rem)/);
 });
 
 test('style contract keeps the Works grid responsive and future-proof', () => {
@@ -134,21 +139,19 @@ test('Profile retains its 40/60 celestial composition until the compact breakpoi
   assert.match(css, /\.hero-copy\s*\{[^}]*min-width:\s*0/s);
 });
 
-test('hero status has two shrinkable regions and stacks on compact screens', () => {
-  assert.match(css, /\.hero-status\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(css, /\.hero-status\s*>\s*\*\s*\{[^}]*min-width:\s*0/s);
-  assert.match(mobileCss, /\.hero-status\s*\{[^}]*grid-template-columns:\s*1fr/s);
+test('removed profile status strip leaves no dead layout styles', () => {
+  assert.doesNotMatch(css, /\.hero-(?:status|featured|scroll)\b/);
 });
 
 test('compact navigation and text actions have at least 44px touch height', () => {
-  for (const selector of ['.brand', '.site-nav a', '.text-link', '.hero-featured']) {
+  for (const selector of ['.brand', '.site-nav a', '.text-link']) {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const body = mobileCss.match(new RegExp(`${escaped}(?=[\\s,{])[^\\{]*\\{[^}]+\\}`, 's'))?.[0] ?? '';
     assert.match(body, /min-height:\s*(?:44px|2\.75rem)/, `${selector} needs a compact touch target`);
   }
 });
 
-test('linked work reveals moonlight without relying on motion or capturing canvas input', () => {
+test('linked work reveals a glow without relying on motion or capturing canvas input', () => {
   assert.match(css, /\.work-card-link:hover\s*,\s*\.work-card-link:focus-visible\s*\{[^}]*box-shadow:/s);
   assert.match(css, /\.work-preview\s*\{[^}]*pointer-events:\s*none/s);
   assert.match(reducedCss, /\.work-card-link:hover\s+\.work-arrow\s*,\s*\.work-card-link:focus-visible\s+\.work-arrow\s*\{[^}]*transform:\s*none/s);
@@ -163,10 +166,10 @@ test('linked preview localizes its cloud reveal to pointer coordinates without i
   assert.match(reducedCss, /\.work-card-link\s+\.work-visual::after\s*\{[^}]*opacity:\s*0/s);
 });
 
-test('Contact values remain fully readable and detail fallback has no moon', () => {
+test('Contact values remain fully readable and fallback contains no moon silhouette', () => {
   assert.match(css, /\.contact-value\s*\{[^}]*overflow-wrap:\s*anywhere/s);
   assert.doesNotMatch(css, /\.contact-value\s*\{[^}]*text-overflow:\s*ellipsis/s);
-  assert.match(css, /body\[data-page="work-detail"\]\s+\.lunar-fallback::before\s*\{[^}]*display:\s*none/s);
+  assert.doesNotMatch(css, /\.lunar-fallback::before|\.hero-moon-note/);
 });
 
 test('Contact heading fits its narrower desktop column', () => {

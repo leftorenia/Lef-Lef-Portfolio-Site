@@ -20,10 +20,9 @@ export function createFragmentShaderSource({ octaves = 4, splatCount = 12, meteo
 precision highp float;
 in vec2 vUv;
 out vec4 outColor;
-uniform vec2 uResolution;
 uniform vec2 uViewport;
 uniform float uTime;
-uniform vec4 uPreset; // cloud, trail displacement, star boost, moon
+uniform vec3 uPreset; // cloud, trail displacement, star boost
 uniform vec4 uTrailPosition[${trailSteps}]; // normalized x/y, strength, radius in CSS pixels
 uniform vec4 uTrailMotion[${trailSteps}]; // direction x/y, normalized age, reserved
 
@@ -171,16 +170,6 @@ void main() {
   float meteorVisibility = 1.0 - clouds * 0.72;
   color += meteorColor * meteorVisibility * 0.92;
 
-  vec2 moon = vec2((uv.x - 0.76) * aspect, uv.y - 0.73);
-  moon = mat2(0.93, -0.37, 0.37, 0.93) * moon;
-  float disc = length(moon) - 0.050;
-  float cutout = length(moon - vec2(0.023, 0.009)) - 0.052;
-  float crescent = max(disc, -cutout);
-  float edge = 1.5 / max(uResolution.y, 1.0);
-  float moonLight = 1.0 - smoothstep(-edge, edge, crescent);
-  float halo = exp(-length(moon) * 16.0) * 0.10;
-  color += (vec3(0.933, 0.957, 1.0) * moonLight * 0.78 + vec3(0.427, 0.569, 0.788) * halo)
-           * uPreset.w * (1.0 - clouds * 0.45);
   color += vec3(0.32, 0.46, 0.68) * trailLight * uPreset.y * readability * 0.12;
   float vignette = 1.0 - smoothstep(0.3, 0.82, length((uv - 0.5) * vec2(0.8, 1.0)));
   color *= 0.72 + vignette * 0.28;

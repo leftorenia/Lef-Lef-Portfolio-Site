@@ -25,10 +25,10 @@ export function getSceneMetrics({ width = 0, height = 0, devicePixelRatio = 1, m
 
 export function getPagePreset(pageMode) {
   const presets = {
-    profile: { cloudStrength: 1, trailStrength: 1, starBoost: 1, moonStrength: 1 },
-    works: { cloudStrength: 0.7, trailStrength: 0.7, starBoost: 1, moonStrength: 0.35 },
-    contact: { cloudStrength: 0.45, trailStrength: 0, starBoost: 1, moonStrength: 0 },
-    detail: { cloudStrength: 0.6, trailStrength: 0.6, starBoost: 1, moonStrength: 0 },
+    profile: { cloudStrength: 1, trailStrength: 1, starBoost: 1 },
+    works: { cloudStrength: 0.7, trailStrength: 0.7, starBoost: 1 },
+    contact: { cloudStrength: 0.45, trailStrength: 0, starBoost: 1 },
+    detail: { cloudStrength: 0.6, trailStrength: 0.6, starBoost: 1 },
   };
   return { ...(Object.hasOwn(presets, pageMode) ? presets[pageMode] : presets.profile) };
 }
@@ -106,7 +106,7 @@ function createWebGLRenderer(canvas, metrics) {
     vertexArray = gl.createVertexArray();
     if (!vertexArray) throw new Error('Unable to allocate lunar vertex array');
     const uniforms = Object.fromEntries([
-      'uResolution', 'uViewport', 'uTime', 'uPreset', 'uTrailPosition[0]', 'uTrailMotion[0]',
+      'uViewport', 'uTime', 'uPreset', 'uTrailPosition[0]', 'uTrailMotion[0]',
     ].map(name => [name, gl.getUniformLocation(program, name)]));
     const positions = new Float32Array(metrics.splatCount * 4);
     const motions = new Float32Array(metrics.splatCount * 4);
@@ -127,11 +127,10 @@ function createWebGLRenderer(canvas, metrics) {
         });
         gl.useProgram(program);
         gl.bindVertexArray(vertexArray);
-        gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
         gl.uniform2f(uniforms.uViewport, frame.width, frame.height);
         gl.uniform1f(uniforms.uTime, frame.time);
         const preset = frame.preset;
-        gl.uniform4f(uniforms.uPreset, preset.cloudStrength, preset.trailStrength, preset.starBoost, preset.moonStrength);
+        gl.uniform3f(uniforms.uPreset, preset.cloudStrength, preset.trailStrength, preset.starBoost);
         gl.uniform4fv(uniforms['uTrailPosition[0]'], positions);
         gl.uniform4fv(uniforms['uTrailMotion[0]'], motions);
         gl.drawArrays(gl.TRIANGLES, 0, 3);

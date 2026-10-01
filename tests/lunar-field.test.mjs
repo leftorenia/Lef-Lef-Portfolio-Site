@@ -49,14 +49,18 @@ test('empty or invalid dimensions cannot produce nonfinite buffers or animation'
   assert.equal(getSceneMetrics({ width: 100, height: 100, reducedMotion: true }).animate, false);
 });
 
-test('page presets protect contact content and remove the detail moon', () => {
-  assert.deepEqual(getPagePreset('contact'), { cloudStrength: 0.45, trailStrength: 0, starBoost: 1, moonStrength: 0 });
-  assert.deepEqual(getPagePreset('profile'), { cloudStrength: 1, trailStrength: 1, starBoost: 1, moonStrength: 1 });
-  assert.equal(getPagePreset('works').cloudStrength, 0.7);
-  assert.equal(getPagePreset('works').trailStrength, 0.7);
-  assert.equal(getPagePreset('detail').cloudStrength, 0.6);
-  assert.equal(getPagePreset('detail').moonStrength, 0);
+test('page presets only control clouds, trails, and stars', () => {
+  assert.deepEqual(getPagePreset('contact'), { cloudStrength: 0.45, trailStrength: 0, starBoost: 1 });
+  assert.deepEqual(getPagePreset('profile'), { cloudStrength: 1, trailStrength: 1, starBoost: 1 });
+  assert.deepEqual(getPagePreset('works'), { cloudStrength: 0.7, trailStrength: 0.7, starBoost: 1 });
+  assert.deepEqual(getPagePreset('detail'), { cloudStrength: 0.6, trailStrength: 0.6, starBoost: 1 });
   assert.deepEqual(getPagePreset('unknown'), getPagePreset('profile'));
+});
+
+test('background shader contains no moon disc, crescent, or halo rendering', () => {
+  const source = createFragmentShaderSource();
+  assert.doesNotMatch(source, /\b(?:moon|crescent|cutout)\b/i);
+  assert.doesNotMatch(source, /uPreset\.w/);
 });
 
 test('shader variants emit GLSL ES 3 with compile-time noise and trail bounds', () => {
@@ -298,6 +302,7 @@ function glFixture({ compileFailure = 0, linkFailure = false } = {}) {
     useProgram() {}, viewport() {},
     uniform1f: (name, value) => uniforms.set(name, value),
     uniform2f: (name, ...value) => uniforms.set(name, value),
+    uniform3f: (name, ...value) => uniforms.set(name, value),
     uniform4f: (name, ...value) => uniforms.set(name, value),
     uniform4fv: (name, value) => uniforms.set(name, Array.from(value)),
     drawArrays: (...args) => draws.push(args),
@@ -325,8 +330,7 @@ test('default renderer draws a full-screen triangle and releases every GPU resou
   const scene = createLunarScene(canvas, { reducedMotion: true, pageMode: 'contact' });
   assert.equal(scene.fallback, false);
   assert.deepEqual(gl.draws, [[4, 0, 3]]);
-  assert.deepEqual(gl.uniforms.get('uPreset'), [0.45, 0, 1, 0]);
-  assert.deepEqual(gl.uniforms.get('uResolution'), [600, 450]);
+  assert.deepEqual(gl.uniforms.get('uPreset'), [0.45, 0, 1]);
   assert.equal(gl.uniforms.get('uTrailPosition[0]').length, 48);
   assert.equal(canvas.width, 600);
   assert.equal(canvas.height, 450);
@@ -372,7 +376,7 @@ test('boot maps work-detail to the detail preset and marks a generated canvas de
   assert.deepEqual(children, [canvas]);
   assert.equal(canvas.id, 'lunar-field');
   assert.equal(attributes.get('aria-hidden'), 'true');
-  assert.deepEqual(gl.uniforms.get('uPreset'), [0.6, 0.6, 1, 0]);
+  assert.deepEqual(gl.uniforms.get('uPreset'), [0.6, 0.6, 1]);
   scene.destroy();
 });
 
