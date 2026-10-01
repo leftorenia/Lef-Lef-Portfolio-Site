@@ -25,9 +25,10 @@ test('style contract includes every page layout hook', () => {
   for (const selector of [
     '.site-nav',
     '.hero',
-    '.profile-grid',
+    '.profile-about',
+    '.profile-socials',
     '.works-grid',
-    '.contact-links',
+    '.contact-cta',
     '.skip-link',
     '.static-nebula',
   ]) {
@@ -139,6 +140,14 @@ test('Profile retains its 40/60 celestial composition until the compact breakpoi
   assert.match(css, /\.hero-copy\s*\{[^}]*min-width:\s*0/s);
 });
 
+test('Profile platform links use an extensible wrapping grid and accessible card targets', () => {
+  const socials = css.match(/\.profile-socials\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(socials, /grid-template-columns:\s*repeat\(auto-(?:fit|fill),\s*minmax\(/);
+  const link = css.match(/\.profile-social-link\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(link, /min-height:\s*(?:4\.5rem|72px)/);
+  assert.match(link, /display:\s*grid/);
+});
+
 test('removed profile status strip leaves no dead layout styles', () => {
   assert.doesNotMatch(css, /\.hero-(?:status|featured|scroll)\b/);
 });
@@ -166,9 +175,9 @@ test('linked preview localizes its cloud reveal to pointer coordinates without i
   assert.match(reducedCss, /\.work-card-link\s+\.work-visual::after\s*\{[^}]*opacity:\s*0/s);
 });
 
-test('Contact values remain fully readable and fallback contains no moon silhouette', () => {
-  assert.match(css, /\.contact-value\s*\{[^}]*overflow-wrap:\s*anywhere/s);
-  assert.doesNotMatch(css, /\.contact-value\s*\{[^}]*text-overflow:\s*ellipsis/s);
+test('Contact provides a prominent X DM action and fallback contains no moon silhouette', () => {
+  assert.match(css, /\.contact-dm-link\s*\{[^}]*min-height:\s*(?:5rem|80px)/s);
+  assert.match(css, /\.contact-dm-link:focus-visible/);
   assert.doesNotMatch(css, /\.lunar-fallback::before|\.hero-moon-note/);
 });
 
