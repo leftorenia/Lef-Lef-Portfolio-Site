@@ -32,7 +32,6 @@ test('style contract includes every page layout hook', () => {
     '.static-nebula',
     '.lunar-fallback',
     '.hero-status',
-    '.sound-toggle',
     '.hero-moon-note',
   ]) {
     assert.match(css, rule(selector), `missing CSS rule for ${selector}`);
@@ -130,8 +129,8 @@ test('Profile retains its 40/60 celestial composition until the compact breakpoi
   assert.match(css, /\.hero-copy\s*\{[^}]*min-width:\s*0/s);
 });
 
-test('hero status has three shrinkable regions and stacks on compact screens', () => {
-  assert.match(css, /\.hero-status\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
+test('hero status has two shrinkable regions and stacks on compact screens', () => {
+  assert.match(css, /\.hero-status\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(css, /\.hero-status\s*>\s*\*\s*\{[^}]*min-width:\s*0/s);
   assert.match(mobileCss, /\.hero-status\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
@@ -173,5 +172,5 @@ test('Contact heading fits its narrower desktop column', () => {
 test('generated work fallbacks use lunar colors when JavaScript is unavailable', () => {
   const visuals = css.slice(css.indexOf('.work-visual {'), css.indexOf('.work-detail-grid {'));
   assert.ok(!/rgba\((?:146, 92, 255|67, 141, 255|188, 232, 255|236, 168, 255),/.test(visuals),
-    'preview fallback and Coming Soon decorations must share the lunar palette');
+    'work previews and fallbacks must share the lunar palette');
 });

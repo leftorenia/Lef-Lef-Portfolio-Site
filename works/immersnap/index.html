@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！">
+  <meta name="theme-color" content="#030815">
+  <title>IMMERSNAP — れふれふ</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body data-page="work-detail">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <canvas id="lunar-field" aria-hidden="true"></canvas>
+  <div class="static-nebula lunar-fallback" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="れふれふ Profile">
+      <img class="brand-mark" src="../../assets/images/lef-lef-avatar.png" width="512" height="512" alt="" aria-hidden="true">
+      <span class="brand-name">れふれふ</span>
+    </a>
+    <nav class="site-nav" aria-label="メインナビゲーション">
+      <a href="../../index.html"><span aria-hidden="true" data-index="01"></span>PROFILE</a>
+      <a href="../../works.html" aria-current="page"><span aria-hidden="true" data-index="02"></span>WORKS</a>
+      <a href="../../contact.html"><span aria-hidden="true" data-index="03"></span>CONTACT</a>
+    </nav>
+  </header>
+
+  <main id="main-content" class="page-shell work-detail-page">
+    <a class="text-link work-detail-back" href="../../works.html"><span aria-hidden="true">←</span> WORKSへ戻る</a>
+
+    <header class="work-detail-header">
+      <div>
+        <p class="section-index"><span>W.002</span> XR / AR PHOTO EXPERIENCE</p>
+        <p class="eyebrow">Interactive AR Photo Experience</p>
+        <h1>IMMER<br>SNAP</h1>
+      </div>
+      <p>
+        XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！
+      </p>
+    </header>
+
+    <figure class="work-detail-visual work-detail-photo">
+      <img
+        class="work-detail-image"
+        src="../../assets/images/works/immersnap/cover.jpg"
+        width="1920"
+        height="1072"
+        alt="光の軌跡と桜の花びらに囲まれたIMMERSNAPのAR撮影体験イメージ"
+        fetchpriority="high"
+        decoding="async"
+      >
+      <figcaption class="work-number">IMMERSNAP / INTERACTIVE AR PHOTO EXPERIENCE</figcaption>
+    </figure>
+
+    <section class="work-detail-grid" aria-label="作品について">
+      <div>
+        <p class="eyebrow">OVERVIEW</p>
+        <h2>新しい思い出の、<br>残し方を体験する。</h2>
+      </div>
+      <div class="work-detail-copy">
+        <p>
+          XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！
+        </p>
+        <div>
+          <p class="eyebrow">EXPERIENCE THEMES</p>
+          <ul class="work-detail-themes">
+            <li>XR TECHNOLOGY</li>
+            <li>AR PHOTO EXPERIENCE</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="work-gallery-section" aria-labelledby="gallery-title">
+      <header class="work-gallery-heading">
+        <p class="eyebrow">VISUAL GALLERY</p>
+        <h2 id="gallery-title">EFFECT<br>VARIATIONS</h2>
+      </header>
+      <div class="work-gallery">
+        <figure class="work-gallery-item">
+          <img
+            src="../../assets/images/works/immersnap/blue-effects.jpg"
+            width="1920"
+            height="989"
+            alt="青い星や魚の光が広がるエフェクト"
+            loading="lazy"
+            decoding="async"
+          >
+          <figcaption>BLUE EFFECTS</figcaption>
+        </figure>
+        <figure class="work-gallery-item">
+          <img
+            src="../../assets/images/works/immersnap/cosmo-effects.jpg"
+            width="1920"
+            height="990"
+            alt="星座や流星が宇宙空間に広がるエフェクト"
+            loading="lazy"
+            decoding="async"
+          >
+          <figcaption>COSMO EFFECTS</figcaption>
+        </figure>
+        <figure class="work-gallery-item">
+          <img
+            src="../../assets/images/works/immersnap/pink-effects.jpg"
+            width="1920"
+            height="983"
+            alt="ピンクの花やハートの光が広がるエフェクト"
+            loading="lazy"
+            decoding="async"
+          >
+          <figcaption>PINK EFFECTS</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="work-detail-tech" aria-labelledby="technology-title">
+      <p id="technology-title" class="eyebrow">TECHNOLOGY</p>
+      <ul class="work-tags" aria-label="使用技術">
+        <li>XR</li>
+        <li>AR</li>
+        <li>PHOTO EXPERIENCE</li>
+      </ul>
+    </section>
+
+    <nav class="work-detail-actions" aria-label="作品ページの次のリンク">
+      <a class="text-link" href="../../works.html">作品一覧を見る <span aria-hidden="true">↗</span></a>
+      <a class="text-link" href="../../contact.html">Contactへ <span aria-hidden="true">↗</span></a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 LEFLEF</span>
+    <span>SHADER / VFX EXPLORATION</span>
+  </footer>
+  <script type="module" src="../../assets/js/lunar-field.js"></script>
+</body>
+</html>
