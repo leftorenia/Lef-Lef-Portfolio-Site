@@ -596,6 +596,23 @@ body[data-page="contact"] .static-nebula {
   fill: currentColor;
 }
 
+.profile-social-icon--github svg,
+.profile-social-icon--note svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.profile-social-icon--note text {
+  font-size: 1.8rem;
+}
+
+.profile-social-icon img {
+  display: block;
+  width: 2.1rem;
+  height: auto;
+  object-fit: contain;
+}
+
 .profile-social-link strong,
 .profile-social-link small {
   display: block;

@@ -148,6 +148,18 @@ test('Profile platform links use an extensible wrapping grid and accessible card
   assert.match(link, /display:\s*grid/);
 });
 
+test('GitHub and note size overrides stay inside their CONNECT frames', () => {
+  const largerIcons = css.match(/\.profile-social-icon--github svg,\s*\.profile-social-icon--note svg\s*\{([^}]*)\}/s)?.[1] ?? '';
+  const width = Number(largerIcons.match(/width:\s*([\d.]+)rem/)?.[1]);
+  const height = Number(largerIcons.match(/height:\s*([\d.]+)rem/)?.[1]);
+  assert.ok(width > 1.25 && width < 2.6, 'marks should be larger without overrunning their existing frames');
+  assert.equal(width, height, 'square SVG view boxes must not be stretched');
+  const note = css.match(/\.profile-social-icon--note text\s*\{([^}]*)\}/s)?.[1] ?? '';
+  assert.ok(Number(note.match(/font-size:\s*([\d.]+)rem/)?.[1]) > 1, 'note glyph needs less internal whitespace');
+  const shared = css.match(/\.profile-social-icon svg,\s*\.contact-dm-icon svg\s*\{([^}]*)\}/s)?.[1] ?? '';
+  assert.match(shared, /width:\s*1\.25rem/);
+});
+
 test('removed profile status strip leaves no dead layout styles', () => {
   assert.doesNotMatch(css, /\.hero-(?:status|featured|scroll)\b/);
 });

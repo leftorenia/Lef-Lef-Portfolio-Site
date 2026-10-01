@@ -11,6 +11,7 @@ const NON_PUBLIC_DIRECTORIES = new Set([
 
 const APPROVED_MEDIA_FILES = new Set([
   'assets/images/lef-lef-avatar.png',
+  'assets/images/platforms/vrchat.png',
 ]);
 
 function isApprovedMediaFile(file) {

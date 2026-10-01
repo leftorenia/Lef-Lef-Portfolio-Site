@@ -126,10 +126,31 @@ test('profile exposes an extensible platform grid with the approved destinations
     ['note', 'https://note.com/lef_torenia_lef'],
     ['X', 'https://x.com/lef_torenia_lef'],
     ['VRChat', 'https://vrchat.com/home/user/usr_58a4e42c-bc5c-4197-9aec-a25c45fd87c5'],
+    ['Speaker Deck', 'https://speakerdeck.com/lef_lef'],
   ]) {
     assert.match(profile, new RegExp(`<a\\b[^>]*href="${href.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"[^>]*>[\\s\\S]*?${label}`, 'i'));
   }
-  assert.equal((profile.match(/class="profile-social-link"/gi) ?? []).length, 4);
+  assert.equal((profile.match(/class="profile-social-link"/gi) ?? []).length, 5);
+});
+
+test('CONNECT places Speaker Deck after VRChat and serves both official logos locally', () => {
+  const socials = pages['index.html'].match(/<ul\b[^>]*class="profile-socials"[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
+  const links = [...socials.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)];
+  assert.deepEqual(links.slice(-2).map(link => getAttribute(link[1], 'href')), [
+    'https://vrchat.com/home/user/usr_58a4e42c-bc5c-4197-9aec-a25c45fd87c5',
+    'https://speakerdeck.com/lef_lef',
+  ]);
+  for (const [link, src] of [
+    [links.at(-2), 'assets/images/platforms/vrchat.png'],
+    [links.at(-1), 'assets/images/platforms/speaker-deck.svg'],
+  ]) {
+    const image = link?.[2].match(/<img\b[^>]*>/i)?.[0] ?? '';
+    assert.equal(getAttribute(image, 'src'), src);
+    assert.equal(getAttribute(image, 'alt'), '', 'adjacent platform label already names the link');
+    assert.ok(existsSync(join(root, src)), `missing logo asset: ${src}`);
+    assert.ok(Number(getAttribute(image, 'width')) > 0);
+    assert.ok(Number(getAttribute(image, 'height')) > 0);
+  }
 });
 
 test('Contact directs inquiries only to the approved X profile', () => {
@@ -145,6 +166,7 @@ test('site structure restricts outbound links to verified destinations', () => {
     'https://note.com/lef_torenia_lef',
     'https://x.com/lef_torenia_lef',
     'https://vrchat.com/home/user/usr_58a4e42c-bc5c-4197-9aec-a25c45fd87c5',
+    'https://speakerdeck.com/lef_lef',
   ]);
 
   const tags = [...allHtml.matchAll(/<a\b[^>]*>/gi)].map((match) => match[0]);
@@ -169,11 +191,11 @@ test('site structure preserves the old About URL with a Profile fallback', () =>
   assert.match(about, /<a\b[^>]*href="index\.html"/i);
 });
 
-test('site structure uses only the approved avatar and local work imagery', () => {
+test('site structure uses only the approved avatar, platform logos, and local work imagery', () => {
   const imageTags = [...allHtml.matchAll(/<img\b[^>]*>/gi)].map(match => match[0]);
   for (const tag of imageTags) {
     const src = getAttribute(tag, 'src');
-    assert.match(src, /(?:^|\.\.\/\.\.\/)assets\/images\/(?:lef-lef-avatar\.png|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
+    assert.match(src, /(?:^|\.\.\/\.\.\/)assets\/images\/(?:lef-lef-avatar\.png|platforms\/(?:vrchat\.png|speaker-deck\.svg)|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
     if (/\/works\//i.test(src)) assert.ok(getAttribute(tag, 'alt'), `work image needs alt text: ${src}`);
   }
   assert.doesNotMatch(allHtml, /assets\/img\//i);
@@ -290,14 +312,14 @@ test('Works lists only published projects with the newest project first', () => 
   assert.doesNotMatch(works, /COMING SOON|data-work-status="coming-soon"|coming-soon-card/i);
 });
 
-test('repository policy keeps approved avatar and work imagery local', () => {
+test('repository policy keeps approved avatar, platform logos, and work imagery local', () => {
   const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
     .toString('utf8')
     .split('\0')
     .filter((file) => file && existsSync(join(root, file)));
   const imageFiles = trackedFiles.filter((file) => /\.(?:png|jpe?g|webp|gif)$/i.test(file));
   for (const file of imageFiles) {
-    assert.match(file, /^assets\/images\/(?:lef-lef-avatar\.png|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
+    assert.match(file, /^assets\/images\/(?:lef-lef-avatar\.png|platforms\/vrchat\.png|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
   }
   assert.deepEqual(trackedFiles.filter((file) => /\.(?:mp3|m4a|wav|ogg)$/i.test(file)), []);
   assert.doesNotMatch(allHtml, /<(?:audio|video)\b/i);
@@ -335,15 +357,20 @@ test('repository policy keeps approved avatar and work imagery local', () => {
   );
 });
 
-test('public reference policy permits the avatar and local work imagery only', () => {
+test('public reference policy permits the avatar, approved platform logos, and local work imagery only', () => {
   const fixture = mkdtempSync(join(tmpdir(), 'lef-avatar-policy-'));
   try {
     mkdirSync(join(fixture, 'assets', 'images', 'works', 'immersnap'), { recursive: true });
     writeFileSync(join(fixture, 'assets', 'images', 'lef-lef-avatar.png'), 'approved avatar fixture');
     writeFileSync(join(fixture, 'assets', 'images', 'works', 'immersnap', 'cover.jpg'), 'work image fixture');
+    mkdirSync(join(fixture, 'assets', 'images', 'platforms'), { recursive: true });
+    writeFileSync(join(fixture, 'assets', 'images', 'platforms', 'vrchat.png'), 'official VRChat logo fixture');
+    writeFileSync(join(fixture, 'assets', 'images', 'platforms', 'speaker-deck.svg'), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
     writeFileSync(join(fixture, 'index.html'), [
       '<img src="assets/images/lef-lef-avatar.png" alt="">',
       '<img src="assets/images/works/immersnap/cover.jpg" alt="IMMERSNAP">',
+      '<img src="assets/images/platforms/vrchat.png" alt="">',
+      '<img src="assets/images/platforms/speaker-deck.svg" alt="">',
     ].join(''));
     assert.deepEqual(publicPolicy.validatePublicReferences(fixture), []);
 
