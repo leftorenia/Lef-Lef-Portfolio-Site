@@ -27,10 +27,6 @@
   </header>
 
   <main id="main-content" class="page-shell works-page">
-    <div class="page-sound sound-control">
-      <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false">SOUND OFF</button>
-      <span>Ambient sound is optional</span>
-    </div>
     <header class="page-heading">
       <p class="section-index"><span>02</span> FIELD 02</p>
       <p class="eyebrow">SELECTED EXPERIMENT</p>
@@ -39,6 +35,37 @@
     </header>
 
     <section class="works-grid" aria-label="作品一覧">
+      <a class="work-card work-card-link" href="works/immersnap/index.html">
+        <div class="work-visual">
+          <img
+            class="work-cover"
+            src="assets/images/works/immersnap/cover.jpg"
+            width="1920"
+            height="1072"
+            alt="光の軌跡と桜の花びらに囲まれたIMMERSNAPのAR撮影体験イメージ"
+            decoding="async"
+          >
+          <span class="work-number">W.002</span>
+        </div>
+        <div class="work-content">
+          <div class="work-heading">
+            <div>
+              <p class="eyebrow">XR / AR Photo Experience</p>
+              <h2>IMMERSNAP</h2>
+            </div>
+            <span class="work-arrow" aria-hidden="true">↗</span>
+          </div>
+          <p class="work-description">
+            XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！
+          </p>
+          <ul class="work-tags" aria-label="使用技術">
+            <li>XR</li>
+            <li>AR</li>
+            <li>PHOTO EXPERIENCE</li>
+          </ul>
+        </div>
+      </a>
+
       <a class="work-card work-card-link" href="works/cosmo-effects/index.html">
         <div class="work-visual">
           <canvas class="work-preview" data-work-preview aria-hidden="true"></canvas>
@@ -68,72 +95,6 @@
           </ul>
         </div>
       </a>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.002</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.003</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.004</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.005</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.006</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
-
-      <article class="work-card coming-soon-card" data-work-status="coming-soon">
-        <div class="coming-soon-visual" aria-hidden="true">
-          <span class="coming-soon-orbit"></span>
-          <span class="coming-soon-star"></span>
-          <span class="work-number">W.007</span>
-        </div>
-        <div class="work-content coming-soon-content">
-          <h2>COMING SOON</h2>
-        </div>
-      </article>
     </section>
   </main>
 
@@ -142,7 +103,6 @@
     <span>SHADER / VFX EXPLORATION</span>
   </footer>
   <script type="module" src="assets/js/lunar-field.js"></script>
-  <script type="module" src="assets/js/ambient-sound.js"></script>
   <script type="module" src="assets/js/work-preview.js"></script>
 </body>
 </html>

@@ -12,6 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(join(root, file), 'utf8');
 const pageFiles = ['index.html', 'works.html', 'contact.html'];
 const detailFile = 'works/cosmo-effects/index.html';
+const immersnapDetailFile = 'works/immersnap/index.html';
 const pages = Object.fromEntries(pageFiles.map((file) => [file, read(file)]));
 const existingHtmlFiles = discoverPublicHtmlFiles(root);
 const allHtml = existingHtmlFiles.map(read).join('\n');
@@ -24,6 +25,10 @@ function navLabels(html) {
 
 function getAttribute(tag, name) {
   return tag.match(new RegExp(`\\b${name}="([^"]*)"`, 'i'))?.[1] ?? '';
+}
+
+function renderedText(fragment) {
+  return fragment.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 test('site structure exposes exactly the approved three-page navigation', () => {
@@ -63,22 +68,17 @@ test('site structure presents the same identity before navigation', () => {
     assert.ok(brandMark, `missing avatar brand mark in ${file}`);
     assert.equal(getAttribute(brandMark, 'src'), 'assets/images/lef-lef-avatar.png');
     assert.equal(getAttribute(brandMark, 'alt'), '');
-    assert.match(header, /class="brand-name"[^>]*>LEFLEF<\/span>/i);
+    assert.match(header, /class="brand-name"[^>]*>れふれふ<\/span>/i);
   }
 });
 
-test('all primary pages expose Lunar Reverie controls and relative modules', () => {
+test('all primary pages expose Lunar Reverie and omit the removed ambient controls and module', () => {
   assert.match(pages['index.html'], /<title>PROFILE — れふれふ<\/title>/i);
-  assert.match(pages['index.html'], /class="brand-name"[^>]*>LEFLEF<\/span>/i);
-  for (const html of [...Object.values(pages), read(detailFile)]) {
+  assert.match(pages['index.html'], /class="brand-name"[^>]*>れふれふ<\/span>/i);
+  for (const html of [...Object.values(pages), read(detailFile), read(immersnapDetailFile)]) {
     assert.match(html, /<canvas\b[^>]*id="lunar-field"[^>]*aria-hidden="true"/i);
     assert.match(html, /class="[^"]*lunar-fallback[^"]*"/i);
-    const soundButtons = [...html.matchAll(/<button\b[^>]*data-sound-toggle\b[^>]*>/gi)];
-    assert.equal(soundButtons.length, 1);
-    assert.equal(getAttribute(soundButtons[0][0], 'aria-pressed'), 'false');
-    const soundModules = [...html.matchAll(/<script\b[^>]*src="[^"]*ambient-sound\.js"[^>]*>/gi)];
-    assert.equal(soundModules.length, 1);
-    assert.equal(getAttribute(soundModules[0][0], 'type'), 'module');
+    assert.doesNotMatch(html, /data-sound-toggle|sound-control|page-sound|ambient-sound\.js/i);
     assert.doesNotMatch(html, /<(?:audio|video)\b/i);
     assert.match(html, /lunar-field\.js/i);
     assert.doesNotMatch(html, /cosmic-field\.js/i);
@@ -102,7 +102,7 @@ test('profile uses the approved avatar for its compact and central identity mark
 });
 
 test('site structure contains truthful profile, work, and contact content', () => {
-  assert.match(pages['index.html'], /Shader \/ VFX Explorer/);
+  assert.match(pages['index.html'], /Shader \/ VFX Artist/);
   for (const label of ['SHADER', 'REALTIME VFX', 'UNITY', 'VISUAL STUDY']) {
     assert.match(pages['index.html'], new RegExp(label));
   }
@@ -144,18 +144,18 @@ test('site structure preserves the old About URL with a Profile fallback', () =>
   assert.match(about, /<a\b[^>]*href="index\.html"/i);
 });
 
-test('site structure embeds no raster image except the approved avatar', () => {
+test('site structure uses only the approved avatar and local work imagery', () => {
   const imageTags = [...allHtml.matchAll(/<img\b[^>]*>/gi)].map(match => match[0]);
-  assert.equal(imageTags.length, 5);
   for (const tag of imageTags) {
-    assert.match(getAttribute(tag, 'src'), /(?:^|\.\.\/\.\.\/)assets\/images\/lef-lef-avatar\.png$/);
-    assert.equal(getAttribute(tag, 'alt'), '');
+    const src = getAttribute(tag, 'src');
+    assert.match(src, /(?:^|\.\.\/\.\.\/)assets\/images\/(?:lef-lef-avatar\.png|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
+    if (/\/works\//i.test(src)) assert.ok(getAttribute(tag, 'alt'), `work image needs alt text: ${src}`);
   }
-  assert.doesNotMatch(allHtml, /Cosmo_effects\.png|assets\/img\//i);
+  assert.doesNotMatch(allHtml, /assets\/img\//i);
 });
 
 test('site structure loads the shared lunar shell without the legacy ocean script', () => {
-  for (const html of [...Object.values(pages), read(detailFile)]) {
+  for (const html of [...Object.values(pages), read(detailFile), read(immersnapDetailFile)]) {
     assert.equal(
       (html.match(/<script\b[^>]*type="module"[^>]*src="(?:\.\.\/\.\.\/)?assets\/js\/lunar-field\.js"[^>]*><\/script>/gi) ?? []).length,
       1,
@@ -188,6 +188,40 @@ test('Cosmo Effects has a truthful static detail page', () => {
   assert.doesNotMatch(detail, /client|employer|award|release/i);
 });
 
+test('IMMERSNAP has a truthful static detail page with its supplied gallery', () => {
+  assert.ok(existsSync(join(root, immersnapDetailFile)), 'missing IMMERSNAP detail page');
+  const detail = read(immersnapDetailFile);
+
+  assert.match(detail, /<body\b[^>]*data-page="work-detail"/i);
+  assert.match(detail, /<title>IMMERSNAP — れふれふ<\/title>/i);
+  assert.match(detail, /<span>W\.002<\/span>/i);
+  const suppliedDescription = 'XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！';
+  const suppliedCopy = [...detail.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
+    .map((match) => renderedText(match[1]))
+    .filter((text) => text.startsWith('XR技術を駆使した'));
+  assert.deepEqual(suppliedCopy, [suppliedDescription, suppliedDescription]);
+  const themes = detail.match(/<ul\b[^>]*class="[^"]*\bwork-detail-themes\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
+  assert.deepEqual(
+    [...themes.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)].map((match) => renderedText(match[1])),
+    ['XR TECHNOLOGY', 'AR PHOTO EXPERIENCE'],
+  );
+
+  const images = [...detail.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
+  const workImages = images.filter((tag) => /assets\/images\/works\/immersnap\//i.test(getAttribute(tag, 'src')));
+  assert.deepEqual(workImages.map((tag) => getAttribute(tag, 'src')), [
+    '../../assets/images/works/immersnap/cover.jpg',
+    '../../assets/images/works/immersnap/blue-effects.jpg',
+    '../../assets/images/works/immersnap/cosmo-effects.jpg',
+    '../../assets/images/works/immersnap/pink-effects.jpg',
+  ]);
+  for (const tag of workImages) {
+    assert.ok(getAttribute(tag, 'alt'), 'IMMERSNAP work images need descriptive alt text');
+    assert.ok(Number(getAttribute(tag, 'width')) > 0, 'IMMERSNAP work images need intrinsic width');
+    assert.ok(Number(getAttribute(tag, 'height')) > 0, 'IMMERSNAP work images need intrinsic height');
+  }
+  assert.doesNotMatch(detail, /client|employer|award|release/i);
+});
+
 test('the real work card and nested detail page use resolvable relative navigation', () => {
   const works = pages['works.html'];
   assert.match(
@@ -209,34 +243,37 @@ test('the real work card and nested detail page use resolvable relative navigati
   assert.doesNotMatch(detail, /\b(?:href|src)="\//i);
 });
 
-test('Works exposes one real project and six inert future slots', () => {
+test('Works lists only published projects with the newest project first', () => {
   const works = pages['works.html'];
-  const cards = [...works.matchAll(/<(?:a|article)\b[^>]*class="[^"]*\bwork-card\b[^"]*"/gi)];
-  const futureCards = [...works.matchAll(
-    /<article\b[^>]*class="[^"]*\bcoming-soon-card\b[^"]*"[^>]*>[\s\S]*?<\/article>/gi,
+  const cards = [...works.matchAll(
+    /<a\b[^>]*class="[^"]*\bwork-card\b[^"]*"[^>]*>[\s\S]*?<\/a>/gi,
   )].map((match) => match[0]);
 
-  assert.equal(cards.length, 7);
-  assert.equal((works.match(/data-work-status="coming-soon"/g) ?? []).length, 6);
-  assert.equal((works.match(/\bwork-card-link\b/g) ?? []).length, 1);
-  assert.equal(futureCards.length, 6);
-
-  for (let index = 2; index <= 7; index += 1) {
-    assert.match(works, new RegExp(`W\\.00${index}[\\s\\S]*COMING SOON`, 'i'));
-  }
-
-  for (const card of futureCards) {
-    assert.doesNotMatch(card, /<a\b|\bhref=|work-arrow|data-work-preview/i);
-  }
+  assert.equal(cards.length, 2);
+  assert.deepEqual(cards.map((card) => getAttribute(card.match(/<a\b[^>]*>/i)?.[0] ?? '', 'href')), [
+    'works/immersnap/index.html',
+    'works/cosmo-effects/index.html',
+  ]);
+  assert.match(cards[0], /W\.002[\s\S]*IMMERSNAP/i);
+  assert.match(cards[0], /assets\/images\/works\/immersnap\/cover\.jpg/i);
+  const newestDescription = cards[0].match(/<p\b[^>]*class="[^"]*\bwork-description\b[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? '';
+  assert.equal(
+    renderedText(newestDescription),
+    'XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！',
+  );
+  assert.match(cards[1], /W\.001[\s\S]*COSMO EFFECTS/i);
+  assert.doesNotMatch(works, /COMING SOON|data-work-status="coming-soon"|coming-soon-card/i);
 });
 
-test('repository policy keeps public assets local and limits raster media to the approved avatar', () => {
+test('repository policy keeps approved avatar and work imagery local', () => {
   const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: root })
     .toString('utf8')
     .split('\0')
-    .filter(Boolean);
+    .filter((file) => file && existsSync(join(root, file)));
   const imageFiles = trackedFiles.filter((file) => /\.(?:png|jpe?g|webp|gif)$/i.test(file));
-  assert.deepEqual(imageFiles, ['assets/images/lef-lef-avatar.png']);
+  for (const file of imageFiles) {
+    assert.match(file, /^assets\/images\/(?:lef-lef-avatar\.png|works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif))$/i);
+  }
   assert.deepEqual(trackedFiles.filter((file) => /\.(?:mp3|m4a|wav|ogg)$/i.test(file)), []);
   assert.doesNotMatch(allHtml, /<(?:audio|video)\b/i);
 
@@ -273,12 +310,16 @@ test('repository policy keeps public assets local and limits raster media to the
   );
 });
 
-test('public reference policy permits only the approved local avatar raster', () => {
+test('public reference policy permits the avatar and local work imagery only', () => {
   const fixture = mkdtempSync(join(tmpdir(), 'lef-avatar-policy-'));
   try {
-    mkdirSync(join(fixture, 'assets', 'images'), { recursive: true });
+    mkdirSync(join(fixture, 'assets', 'images', 'works', 'immersnap'), { recursive: true });
     writeFileSync(join(fixture, 'assets', 'images', 'lef-lef-avatar.png'), 'approved avatar fixture');
-    writeFileSync(join(fixture, 'index.html'), '<img src="assets/images/lef-lef-avatar.png" alt="">');
+    writeFileSync(join(fixture, 'assets', 'images', 'works', 'immersnap', 'cover.jpg'), 'work image fixture');
+    writeFileSync(join(fixture, 'index.html'), [
+      '<img src="assets/images/lef-lef-avatar.png" alt="">',
+      '<img src="assets/images/works/immersnap/cover.jpg" alt="IMMERSNAP">',
+    ].join(''));
     assert.deepEqual(publicPolicy.validatePublicReferences(fixture), []);
 
     writeFileSync(join(fixture, 'assets', 'images', 'extra.png'), 'unapproved image fixture');
@@ -290,8 +331,7 @@ test('public reference policy permits only the approved local avatar raster', ()
 test('repository policy documents preview, verification, motion, and image rules', () => {
   const readme = read('README.md');
   for (const topic of [/Lunar Reverie/, /WebGL2/, /CSS[^\n]*(?:フォールバック|fallback)/i,
-    /Web Audio/, /SOUND OFF/, /START SOUND/, /SOUND ON/, /SOUND UNAVAILABLE/,
-    /(?:明示|クリック|操作)[^\n]*(?:生成|開始|再開)/, /参照サイト[^\n]*含め/]) {
+    /参照サイト[^\n]*含め/]) {
     assert.match(readme, topic);
   }
   assert.match(readme, /npm test/);
@@ -302,11 +342,8 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.doesNotMatch(readme, /ラスター画像と音声ファイルは追加しません/);
   assert.match(readme, /## Adding a work/);
   assert.match(readme, /works\/<slug>\/index\.html/);
-  assert.match(readme, /COMING SOON/i);
-  assert.match(readme, /Coming Soon[^\n]*(?:置き換|置換)/i);
   assert.match(readme, /works\/cosmo-effects\/index\.html[^\n]*(?:コピー|複製)/i);
   assert.match(readme, /tests\/site-structure\.test\.mjs/);
-  assert.match(readme, /(?:カード数|期待値)/);
 });
 
 test('recursive public references stay inside the GitHub Pages project and resolve locally', () => {

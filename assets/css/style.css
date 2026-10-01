@@ -399,7 +399,7 @@ body[data-page="contact"] .static-nebula {
 .hero-status {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   gap: 1.5rem;
   min-height: 5rem;
@@ -411,42 +411,8 @@ body[data-page="contact"] .static-nebula {
   min-width: 0;
 }
 
-.sound-control {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-  color: var(--color-muted);
-  font-size: 0.875rem;
-}
-
-.sound-toggle {
-  min-height: 2.75rem;
-  padding: 0.55rem 1rem;
-  border: 1px solid var(--color-line-strong);
-  border-radius: 0;
-  background: rgba(8, 21, 45, 0.85);
-  color: var(--color-text);
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-}
-
-.sound-toggle:hover,
-.sound-toggle:focus-visible {
-  border-color: var(--color-ice);
-  background: var(--color-blue);
-}
-
-.sound-toggle:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
 .hero-featured {
-  justify-self: center;
+  justify-self: start;
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: 0.875rem;
@@ -473,12 +439,6 @@ body[data-page="contact"] .static-nebula {
   font-size: 0.875rem;
   letter-spacing: 0.08em;
   text-align: right;
-}
-
-.page-sound {
-  grid-column: 1 / -1;
-  justify-self: end;
-  margin-bottom: 2rem;
 }
 
 .profile-emblem::before,
@@ -742,7 +702,7 @@ body[data-page="contact"] .static-nebula {
 .work-visual {
   position: relative;
   min-height: 0;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border-bottom: 1px solid var(--color-line);
   background:
@@ -769,6 +729,13 @@ body[data-page="contact"] .static-nebula {
   mask-image: radial-gradient(ellipse 9rem 6rem at var(--work-pointer-x, 50%) var(--work-pointer-y, 50%), #000 10%, transparent 100%);
   opacity: var(--work-pointer-active, 0);
   transition: opacity 220ms ease;
+}
+
+.work-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .work-preview {
@@ -889,99 +856,6 @@ body[data-page="contact"] .static-nebula {
   overflow-wrap: anywhere;
 }
 
-.coming-soon-card {
-  cursor: default;
-  background: linear-gradient(145deg, rgba(8, 21, 45, 0.7), rgba(3, 8, 21, 0.88));
-}
-
-.coming-soon-visual {
-  position: relative;
-  min-width: 0;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  isolation: isolate;
-  border-bottom: 1px solid var(--color-line);
-  background:
-    radial-gradient(circle at 48% 46%, rgba(109, 145, 201, 0.09), transparent 28%),
-    linear-gradient(145deg, rgba(8, 21, 45, 0.8), rgba(3, 8, 21, 0.92));
-}
-
-.coming-soon-visual::before {
-  position: absolute;
-  inset: -20%;
-  background-image:
-    linear-gradient(rgba(190, 214, 246, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(190, 214, 246, 0.045) 1px, transparent 1px);
-  background-size: 2.2rem 2.2rem;
-  content: "";
-  mask-image: radial-gradient(circle, #000 18%, transparent 66%);
-  opacity: 0.68;
-  transform: perspective(18rem) rotateX(58deg) translateY(13%);
-}
-
-.coming-soon-visual::after {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  left: 50%;
-  width: 54%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(109, 145, 201, 0.1), transparent 68%);
-  content: "";
-  filter: blur(0.8rem);
-  transform: translate(-50%, -50%);
-}
-
-.coming-soon-orbit {
-  position: absolute;
-  top: 49%;
-  left: 50%;
-  width: 48%;
-  aspect-ratio: 2.6;
-  border: 1px solid rgba(190, 214, 246, 0.17);
-  border-radius: 50%;
-  box-shadow: 0 0 1.8rem rgba(109, 145, 201, 0.05);
-  transform: translate(-50%, -50%) rotate(-16deg);
-}
-
-.coming-soon-star {
-  position: absolute;
-  top: 46%;
-  left: 50%;
-  width: 0.24rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgba(190, 214, 246, 0.75);
-  box-shadow: 0 0 0.8rem rgba(190, 214, 246, 0.65), 0 0 2.4rem rgba(215, 196, 231, 0.5);
-}
-
-.coming-soon-card:nth-child(3n) .coming-soon-orbit {
-  border-color: rgba(215, 196, 231, 0.2);
-  transform: translate(-50%, -50%) rotate(21deg);
-}
-
-.coming-soon-card:nth-child(3n + 1) .coming-soon-star {
-  top: 55%;
-  left: 43%;
-  background: rgba(215, 196, 231, 0.72);
-}
-
-.coming-soon-content {
-  min-height: 12rem;
-  justify-content: flex-end;
-}
-
-.coming-soon-content h2 {
-  margin: 0;
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: clamp(1rem, 1.5vw, 1.3rem);
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  overflow-wrap: anywhere;
-}
-
 .work-detail-page {
   padding-top: clamp(3.5rem, 7vw, 6.5rem);
   padding-bottom: clamp(6rem, 10vw, 10rem);
@@ -1009,6 +883,7 @@ body[data-page="contact"] .static-nebula {
   font-weight: 250;
   letter-spacing: -0.075em;
   line-height: 0.77;
+  overflow-wrap: anywhere;
 }
 
 .work-detail-header > p {
@@ -1031,6 +906,17 @@ body[data-page="contact"] .static-nebula {
     radial-gradient(ellipse at 72% 30%, rgba(40, 77, 134, 0.32), transparent 54%),
     #030815;
   box-shadow: 0 2rem 7rem rgba(0, 0, 0, 0.34);
+}
+
+.work-detail-photo {
+  margin: 0;
+}
+
+.work-detail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .work-detail-grid {
@@ -1088,6 +974,65 @@ body[data-page="contact"] .static-nebula {
 .work-detail-themes li:nth-child(even) {
   padding-left: 1rem;
   border-left: 1px solid var(--color-line);
+}
+
+.work-gallery-section {
+  padding: clamp(5rem, 10vw, 9rem) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.work-gallery-heading {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.5fr) minmax(0, 1.5fr);
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: clamp(2.5rem, 6vw, 5rem);
+}
+
+.work-gallery-heading .eyebrow {
+  margin: 0;
+}
+
+.work-gallery-heading h2 {
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 6rem);
+  font-weight: 300;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+}
+
+.work-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+.work-gallery-item {
+  min-width: 0;
+  margin: 0;
+}
+
+.work-gallery-item:first-child {
+  grid-column: 1 / -1;
+}
+
+.work-gallery-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  background: #030815;
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.28);
+}
+
+.work-gallery-item figcaption {
+  padding-top: 0.85rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
 }
 
 .work-detail-tech {
@@ -1300,10 +1245,6 @@ body[data-page="contact"] .static-nebula {
     text-align: left;
   }
 
-  .page-sound {
-    justify-self: start;
-  }
-
   .section-index {
     margin-bottom: 3rem;
   }
@@ -1367,13 +1308,15 @@ body[data-page="contact"] .static-nebula {
     gap: 2.5rem;
   }
 
-  .coming-soon-content {
-    min-height: 9rem;
-  }
-
   .work-detail-themes,
+  .work-gallery,
+  .work-gallery-heading,
   .work-detail-tech {
     grid-template-columns: 1fr;
+  }
+
+  .work-gallery-item:first-child {
+    grid-column: auto;
   }
 
   .work-detail-themes li:nth-child(odd),
