@@ -10,6 +10,7 @@ test('desktop buffers cap DPR and apply high quality render scale', () => {
   assert.equal(high.renderScale, 0.75);
   assert.equal(high.octaves, 4);
   assert.equal(high.splatCount, 12);
+  assert.equal(high.meteorCount, 5);
   assert.equal(high.animate, true);
   assert.equal(high.bufferWidth, 1620);
   assert.equal(high.bufferHeight, 1125);
@@ -22,6 +23,7 @@ test('mobile buffers use medium quality and a one DPR cap', () => {
   assert.equal(mobile.renderScale, 0.625);
   assert.equal(mobile.octaves, 3);
   assert.equal(mobile.splatCount, 8);
+  assert.equal(mobile.meteorCount, 4);
   assert.equal(mobile.bufferWidth, 244);
   assert.equal(mobile.bufferHeight, 528);
 });
@@ -32,6 +34,7 @@ test('low quality remains available for subsequent adaptive downgrade', () => {
   assert.equal(low.renderScale, 0.5);
   assert.equal(low.octaves, 2);
   assert.equal(low.splatCount, 4);
+  assert.equal(low.meteorCount, 3);
   assert.equal(low.bufferWidth, 500);
 });
 
@@ -67,6 +70,111 @@ test('shader variants emit GLSL ES 3 with compile-time noise and trail bounds', 
   assert.doesNotMatch(createFragmentShaderSource({ octaves: NaN, splatCount: Infinity }), /NaN|Infinity/);
 });
 
+test('shader gives ambient stars a wider, slightly faster twinkle', () => {
+  const source = createFragmentShaderSource({ octaves: 3, splatCount: 8 });
+  const values = source.match(
+    /float\s+twinkle\s*=\s*([0-9.]+)\s*\+\s*([0-9.]+)\s*\*\s*sin\(uTime\s*\*\s*([0-9.]+)/,
+  )?.slice(1).map(Number);
+  assert.ok(values, 'shader must expose the star twinkle envelope');
+  const [base, amplitude, speed] = values;
+  assert.ok(base - amplitude >= 0 && base - amplitude <= 0.5, 'twinkle needs a visible dim phase');
+  assert.ok(base + amplitude >= 1, 'twinkle needs a bright peak');
+  assert.ok(speed >= 0.8, 'twinkle needs a slightly quicker pulse');
+});
+
+test('shader strongly boosts stars around active pointer trails', () => {
+  const source = createFragmentShaderSource({ octaves: 3, splatCount: 8 });
+  const pointerBoost = Number(source.match(
+    /\(1\.0\s*\+\s*trailLight\s*\*\s*uPreset\.z\s*\*\s*([0-9.]+)\)/,
+  )?.[1]);
+  assert.ok(pointerBoost >= 4, 'the tighter pointer trail needs a strongly emphasized local star boost');
+});
+
+test('meteor shower scales by quality and travels from upper-right to lower-left', () => {
+  for (const meteorCount of [5, 4, 3]) {
+    const source = createFragmentShaderSource({ meteorCount });
+    assert.match(source, new RegExp(`for \\(int meteor = 0; meteor < ${meteorCount}; meteor\\+\\+\\)`));
+  }
+  const source = createFragmentShaderSource({ meteorCount: 5 });
+  const direction = source.match(
+    /const\s+vec2\s+meteorDirection\s*=\s*normalize\(vec2\(\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*\)\)/,
+  )?.slice(1).map(Number);
+  assert.ok(direction, 'shader must expose a fixed meteor travel direction');
+  assert.ok(direction[0] < 0 && direction[1] < 0, 'meteors must move left and down in UV space');
+  assert.ok(Math.abs(direction[1] / direction[0] - 0.74) < 0.02, 'meteor angle must match the reference image');
+  assert.doesNotMatch(createFragmentShaderSource({ meteorCount: Infinity }), /NaN|Infinity/);
+});
+
+test('meteor cadence keeps multiple emitters evenly staggered across time at every quality', () => {
+  for (const meteorCount of [5, 4, 3]) {
+    const source = createFragmentShaderSource({ meteorCount });
+    const cadence = Number(source.match(/const\s+float\s+meteorCadence\s*=\s*([0-9.]+)/)?.[1]);
+    assert.ok(cadence > 0, 'shader must expose one shared cadence');
+    assert.match(
+      source,
+      new RegExp(`float\\s+phase\\s*=\\s*fract\\(uTime\\s*\\*\\s*meteorCadence\\s*\\+\\s*index\\s*\\/\\s*float\\(${meteorCount}\\)\\)`),
+    );
+    for (let time = 0; time <= 120; time += 0.125) {
+      const active = Array.from({ length: meteorCount }, (_, index) =>
+        (time * cadence + index / meteorCount) % 1,
+      ).filter(phase => phase >= 0.07 && phase <= 0.9).length;
+      assert.ok(active >= 2, `${meteorCount} meteors must keep at least two emitters active at ${time}s`);
+    }
+  }
+});
+
+test('clouds softly occlude the meteor shower', () => {
+  const source = createFragmentShaderSource({ meteorCount: 5 });
+  const occlusion = Number(source.match(
+    /float\s+meteorVisibility\s*=\s*1\.0\s*-\s*clouds\s*\*\s*([0-9.]+)/,
+  )?.[1]);
+  assert.ok(occlusion > 0 && occlusion < 1, 'cloud cover must partially hide, not erase, meteors');
+  assert.match(source, /meteorColor\s*\*\s*meteorVisibility/);
+});
+
+test('meteor silhouette has a long tapered core, diffuse haze, and layered head', () => {
+  const source = createFragmentShaderSource({ meteorCount: 5 });
+  const trailBounds = source.match(
+    /float\s+trailLength\s*=\s*mix\(\s*([0-9.]+)\s*,\s*([0-9.]+)/,
+  )?.slice(1).map(Number);
+  assert.ok(trailBounds, 'shader must expose the reference-length trail range');
+  assert.ok(trailBounds[0] >= 0.45 && trailBounds[1] >= 0.75, 'trail must remain long and slender');
+  for (const layer of ['trailProgress', 'taperedWidth', 'tailCore', 'tailHaze', 'headCore', 'headComa', 'headHalo']) {
+    assert.match(source, new RegExp(`float\\s+${layer}\\s*=`), `shader must define ${layer}`);
+  }
+  const widths = source.match(
+    /float\s+baseWidth\s*=\s*mix\(\s*([0-9.]+)[^;]+;[\s\S]*?float\s+taperedWidth\s*=\s*mix\(baseWidth,\s*([0-9.]+)/,
+  )?.slice(1).map(Number);
+  assert.ok(widths && widths[1] < widths[0], 'the bright core must narrow toward the trail tip');
+  const meteorSample = source.match(/vec3\s+meteorSample\s*=([\s\S]*?);/)?.[1] ?? '';
+  for (const layer of ['tailCore', 'tailHaze', 'headCore', 'headComa', 'headHalo']) {
+    assert.match(meteorSample, new RegExp(`\\b${layer}\\b`), `${layer} must contribute to the final meteor`);
+  }
+  assert.doesNotMatch(source, /meteorScale/, 'reference silhouette must not use uniform three-axis scaling');
+});
+
+test('meteor shader culls distant fragments before expensive layered falloff', () => {
+  const source = createFragmentShaderSource({ meteorCount: 5 });
+  const boundsAt = source.indexOf('float meteorBounds');
+  const progressAt = source.indexOf('float trailProgress');
+  assert.ok(boundsAt >= 0 && boundsAt < progressAt, 'cheap bounds must run before fractional powers and exponentials');
+  assert.match(source, /if\s*\([^)]*along[^)]*across[^)]*\)\s*continue\s*;/s);
+});
+
+test('meteor glow grades from a white core into desaturated ice blue and compresses overlap', () => {
+  const source = createFragmentShaderSource({ meteorCount: 5 });
+  const readColor = name => source.match(
+    new RegExp(`const\\s+vec3\\s+${name}\\s*=\\s*vec3\\(\\s*([0-9.]+)\\s*,\\s*([0-9.]+)\\s*,\\s*([0-9.]+)\\s*\\)`),
+  )?.slice(1).map(Number);
+  const core = readColor('meteorCoreColor');
+  const haze = readColor('meteorHazeColor');
+  assert.ok(core?.every(channel => channel >= 0.95), 'meteor core must be near-white');
+  assert.ok(haze && haze[2] > haze[1] && haze[1] > haze[0], 'outer glow must be desaturated ice blue');
+  assert.ok(haze[2] - haze[0] < 0.65, 'outer glow must avoid saturated cyan or electric blue');
+  assert.match(source, /vec3\s+meteorColor\s*=\s*vec3\(0\.0\)/);
+  assert.match(source, /return\s+1\.0\s*-\s*exp\(-meteorColor\)/, 'overlapping meteors must use soft energy compression');
+});
+
 test('cloud band squares its signed offset without undefined negative-base GLSL pow', () => {
   for (const [octaves, splatCount] of [[4, 12], [3, 8], [2, 4]]) {
     const source = createFragmentShaderSource({ octaves, splatCount });
@@ -92,6 +200,13 @@ test('pointer trail is bounded, normalized, and fully decays at its deadline', (
   trail.push({ x: 0.5, y: 0.5 }, 3000);
   trail.clear();
   assert.deepEqual(trail.sample(3000), []);
+});
+
+test('default pointer trail expires after two seconds', () => {
+  const trail = createPointerTrail();
+  trail.push({ x: 0.5, y: 0.5, strength: 1 }, 0);
+  assert.equal(trail.sample(1999).length, 1);
+  assert.deepEqual(trail.sample(2000), []);
 });
 
 function canvasWith(context = null) {
@@ -218,6 +333,26 @@ test('default renderer draws a full-screen triangle and releases every GPU resou
   scene.destroy();
   scene.destroy();
   assert.equal(gl.allocated.size, 0);
+});
+
+test('default renderer sends a 100px pointer influence radius to the GPU', () => {
+  const gl = glFixture();
+  const windowTarget = eventTarget({ innerWidth: 800, innerHeight: 600, devicePixelRatio: 1 });
+  const documentTarget = eventTarget({ hidden: false });
+  const motionQuery = eventTarget({ matches: false });
+  const canvas = eventTarget(canvasWith(gl));
+  let frameCallback;
+  let time = 0;
+  const scene = createLunarScene(canvas, {
+    windowTarget, documentTarget, motionQuery, now: () => time,
+    requestFrame(callback) { frameCallback = callback; return 1; },
+    cancelFrame() {},
+  });
+  windowTarget.emit('pointermove', { clientX: 400, clientY: 300 });
+  time = 16;
+  frameCallback(time);
+  assert.equal(gl.uniforms.get('uTrailPosition[0]')[3], 100);
+  scene.destroy();
 });
 
 test('boot maps work-detail to the detail preset and marks a generated canvas decorative', () => {

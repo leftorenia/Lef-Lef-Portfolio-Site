@@ -12,9 +12,10 @@ function boundedInteger(value, fallback, maximum) {
   return Number.isFinite(value) ? Math.max(1, Math.min(maximum, Math.floor(value))) : fallback;
 }
 
-export function createFragmentShaderSource({ octaves = 4, splatCount = 12 } = {}) {
+export function createFragmentShaderSource({ octaves = 4, splatCount = 12, meteorCount = 5 } = {}) {
   const noiseSteps = boundedInteger(octaves, 4, 4);
   const trailSteps = boundedInteger(splatCount, 12, 12);
+  const meteorSteps = boundedInteger(meteorCount, 5, 5);
   return `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -63,8 +64,67 @@ float stars(vec2 p) {
   vec2 offset = vec2(hash(cell + 8.3), hash(cell + 27.1));
   float distanceToStar = length(fract(p) - (0.15 + offset * 0.7));
   float presence = step(0.967, hash(cell));
-  float twinkle = 0.76 + 0.12 * sin(uTime * 0.65 + hash(cell + 4.0) * 6.283);
+  float twinkle = 0.72 + 0.28 * sin(uTime * 0.85 + hash(cell + 4.0) * 6.283);
   return presence * exp(-distanceToStar * distanceToStar * 1250.0) * twinkle;
+}
+
+vec3 meteorShower(vec2 uv, float aspect) {
+  const vec2 meteorDirection = normalize(vec2(-1.0, -0.74));
+  const vec2 trailDirection = -meteorDirection;
+  const vec2 trailNormal = vec2(-trailDirection.y, trailDirection.x);
+  const vec3 meteorCoreColor = vec3(0.97, 0.985, 1.0);
+  const vec3 meteorInnerColor = vec3(0.74, 0.87, 0.92);
+  const vec3 meteorHazeColor = vec3(0.30, 0.52, 0.68);
+  const float meteorCadence = 0.13;
+  vec2 scenePosition = vec2(uv.x * aspect, uv.y);
+  vec3 meteorColor = vec3(0.0);
+  for (int meteor = 0; meteor < ${meteorSteps}; meteor++) {
+    float index = float(meteor);
+    float lane = hash(vec2(index + 2.4, 7.1));
+    float phase = fract(uTime * meteorCadence + index / float(${meteorSteps}));
+    vec2 laneOffset = trailNormal * mix(-0.45, 0.45, lane);
+    vec2 origin = vec2(aspect + 0.18, 1.12) + laneOffset;
+    vec2 head = origin + meteorDirection * phase * (aspect + 1.0);
+    vec2 delta = scenePosition - head;
+    float along = dot(delta, trailDirection);
+    float across = dot(delta, trailNormal);
+    float trailLength = mix(0.52, 0.84, hash(vec2(index + 11.7, 3.2)));
+    float baseWidth = mix(0.0030, 0.0046, hash(vec2(index + 23.4, 14.6)));
+    float meteorBounds = baseWidth * 18.0;
+    if (along < -meteorBounds || along > trailLength + meteorBounds
+        || across < -meteorBounds || across > meteorBounds) continue;
+    float trailProgress = clamp(along / max(trailLength, 0.0001), 0.0, 1.0);
+    float trailMask = step(0.0, along)
+                      * (1.0 - smoothstep(trailLength * 0.84, trailLength, along));
+    float remaining = max(1.0 - trailProgress, 0.0);
+    float taperedWidth = mix(baseWidth, 0.00055, pow(trailProgress, 0.62));
+    float coreWidth = max(taperedWidth, 0.0001);
+    float hazeWidth = max(mix(baseWidth * 2.8, baseWidth * 6.0,
+                              pow(trailProgress, 1.15)), 0.0001);
+    float tailCore = exp(-(across * across) / (coreWidth * coreWidth))
+                     * pow(remaining, 0.58) * trailMask;
+    float tailHaze = exp(-(across * across) / (hazeWidth * hazeWidth))
+                     * pow(remaining, 1.25) * trailMask;
+
+    float rearStretch = mix(1.35, 3.35, smoothstep(-baseWidth, baseWidth, along));
+    float coreAlong = along / max(baseWidth * rearStretch, 0.0001);
+    float coreAcross = across / max(baseWidth * 1.9, 0.0001);
+    float headCore = exp(-(coreAlong * coreAlong + coreAcross * coreAcross) * 1.35);
+    float comaAlong = along / max(baseWidth * (rearStretch + 2.4), 0.0001);
+    float comaAcross = across / max(baseWidth * 4.2, 0.0001);
+    float headComa = exp(-(comaAlong * comaAlong + comaAcross * comaAcross) * 1.15);
+    float haloAlong = along / max(baseWidth * (rearStretch + 6.0), 0.0001);
+    float haloAcross = across / max(baseWidth * 8.0, 0.0001);
+    float headHalo = exp(-(haloAlong * haloAlong + haloAcross * haloAcross) * 1.05);
+
+    float edgeFade = smoothstep(0.0, 0.07, phase) * (1.0 - smoothstep(0.90, 1.0, phase));
+    float brightness = mix(0.55, 0.90, hash(vec2(index + 31.2, 8.7)));
+    vec3 meteorSample = meteorCoreColor * (tailCore * 0.78 + headCore * 1.65)
+                        + meteorInnerColor * (tailHaze * 0.20 + headComa * 0.58)
+                        + meteorHazeColor * (tailHaze * 0.34 + headHalo * 0.32);
+    meteorColor += meteorSample * edgeFade * brightness;
+  }
+  return 1.0 - exp(-meteorColor);
 }
 
 void main() {
@@ -105,7 +165,11 @@ void main() {
 
   float starLight = stars(p * 115.0) + stars(p * 67.0 + 41.2) * 0.6;
   color += vec3(0.77, 0.85, 1.0) * starLight * (0.35 + readability * 0.65)
-           * (1.0 - clouds * 0.65) * (1.0 + trailLight * uPreset.z * 0.8);
+           * (1.0 - clouds * 0.65) * (1.0 + trailLight * uPreset.z * 4.0);
+
+  vec3 meteorColor = meteorShower(uv, aspect);
+  float meteorVisibility = 1.0 - clouds * 0.72;
+  color += meteorColor * meteorVisibility * 0.92;
 
   vec2 moon = vec2((uv.x - 0.76) * aspect, uv.y - 0.73);
   moon = mat2(0.93, -0.37, 0.37, 0.93) * moon;
