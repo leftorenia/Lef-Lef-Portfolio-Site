@@ -42,6 +42,8 @@ npm test
 
 テストではページ構成、描画品質、低モーション、WebGL2非対応時の挙動を確認します。公開HTMLの全href/src、相対ES module import、CSS素材参照を再帰的に検査し、GitHub Pagesの `/Lef-Lef-Portfolio-Site/` 配下で解決すること、リモートコード・フォント・メディアやルート相対素材がないことを確認します。ラスター画像は承認済みプロフィールアイコン、公式VRChatロゴ `assets/images/platforms/vrchat.png`、`assets/images/works/<slug>/` 配下の作品画像だけを許可し、音声ファイルは許可しません。
 
+作品動画は例外として、明示的に設定した動画URLのみ使用します。YouTube/Vimeoは公式プレーヤーへ埋め込み、HTTPSのMP4/WebMは直接再生します。ローカルのMP4/WebMは `assets/videos/works/<slug>/` 配下のみ許可します。環境音や動画の自動再生は追加しません。
+
 公開前は `git diff --check` も実行し、Profile、Works、Contact、作品詳細を1440×1000、900×1000、390×844で確認します。横スクロール、フォーカス、低モーション、WebGL無効時、コンソールエラーを点検してください。
 
 ## Adding a work
@@ -55,6 +57,19 @@ npm test
 5. `npm test` を実行したあとローカルプレビューを開き、一覧・詳細・戻り先のリンクと各画面幅での表示を確認します。
 
 作品情報は静的HTMLへ記述し、JavaScriptやCanvasが利用できない場合もタイトル、説明、技術情報を読める状態を維持します。
+
+### Detail images and video
+
+表紙の下に掲載する画像は `.work-gallery` 内の `.work-gallery-item` に追加します。すべて同じ幅の2列組みで、719px以下では1列になります。画像は16:9のフレーム内に `object-fit: contain` で収めるため、元の比率が異なる場合も切り抜き・引き伸ばしをせず、余白で調整します。HTMLの `width` / `height` は画像の実寸を記載してください。
+
+動画欄は各詳細ページの表紙直下、OVERVIEWの前にある `.work-video-section` です。`data-work-video-url=""` にURLまたはファイルパスを指定すると、全幅の16:9プレーヤーを表示します。空欄の場合はセクション全体を非表示にし、余白も残しません。`data-work-video-title` には作品名を含む動画タイトルを設定します。
+
+- YouTube: 通常の `https://www.youtube.com/watch?v=VIDEO_ID`、`https://youtu.be/VIDEO_ID`、Shorts・live・埋め込みURLに対応します。共有パラメーターや自動再生指定は引き継ぎません。[公式のプライバシー強化モード](https://support.google.com/youtube/answer/171780)の `youtube-nocookie.com` プレーヤーを使用します。
+- Vimeo: `https://vimeo.com/VIDEO_ID` または公式プレーヤーURLを使用します。限定公開動画では末尾のハッシュまたは `h` パラメーターを維持します。[Vimeo公式の限定公開動画案内](https://help.vimeo.com/hc/en-us/articles/12426470858001-Embedded-player-displays-This-video-does-not-exist-message)を参照してください。
+- 動画素材: `assets/videos/works/<slug>/demo.mp4`（またはWebM）へ保存し、詳細ページからは `../../assets/videos/works/<slug>/demo.mp4` を指定します。HTTPSで配信するMP4/WebMの直接URLも使用できます。
+- その他の動画サイト: 安全なHTTPSのURLは元サイトへのリンクとして表示し、任意のページをiframeへ埋め込みません。別サイトの埋め込み対応が必要になった際は、その公式方式を追加してください。
+
+どの方式でも自動再生・ループは行わず、元動画を開くリンクをプレーヤーの下に残します。投稿元の埋め込み禁止・限定公開設定・動画削除等はサイト側で回避できません。現在は動画URL未指定のため、実際の動画欄は表示されません。動画欄の初期化にはJavaScriptが必要ですが、作品の本文と画像はJavaScriptなしでも表示されます。
 
 ## Motion and accessibility
 

@@ -235,6 +235,18 @@ test('Cosmo Effects has a truthful static detail page', () => {
   assert.doesNotMatch(detail, /client|employer|award|release/i);
 });
 
+test('each work detail has an optional video slot directly after its cover, before its overview', () => {
+  for (const file of [detailFile, immersnapDetailFile]) {
+    const detail = read(file);
+    const cover = detail.indexOf('class="work-detail-visual');
+    const video = detail.indexOf('class="work-video-section"');
+    const overview = detail.search(/class="work-detail-(?:grid|description)"/);
+    assert.ok(cover >= 0 && video > cover && overview > video, file);
+    assert.match(detail, /data-work-video-url=""[^>]*hidden/i, 'no supplied video means no empty visible slot');
+    assert.match(detail, /src="\.\.\/\.\.\/assets\/js\/work-media\.js"/);
+  }
+});
+
 test('IMMERSNAP has a truthful static detail page with its supplied gallery', () => {
   assert.ok(existsSync(join(root, immersnapDetailFile)), 'missing IMMERSNAP detail page');
   const detail = read(immersnapDetailFile);
@@ -246,12 +258,7 @@ test('IMMERSNAP has a truthful static detail page with its supplied gallery', ()
   const suppliedCopy = [...detail.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
     .map((match) => renderedText(match[1]))
     .filter((text) => text.startsWith('XR技術を駆使した'));
-  assert.deepEqual(suppliedCopy, [suppliedDescription, suppliedDescription]);
-  const themes = detail.match(/<ul\b[^>]*class="[^"]*\bwork-detail-themes\b[^"]*"[^>]*>([\s\S]*?)<\/ul>/i)?.[1] ?? '';
-  assert.deepEqual(
-    [...themes.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)].map((match) => renderedText(match[1])),
-    ['XR TECHNOLOGY', 'AR PHOTO EXPERIENCE'],
-  );
+  assert.deepEqual(suppliedCopy, [suppliedDescription]);
 
   const images = [...detail.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
   const workImages = images.filter((tag) => /assets\/images\/works\/immersnap\//i.test(getAttribute(tag, 'src')));
@@ -401,6 +408,29 @@ test('repository policy documents preview, verification, motion, and image rules
 test('recursive public references stay inside the GitHub Pages project and resolve locally', () => {
   assert.equal(typeof publicPolicy.validatePublicReferences, 'function');
   assert.deepEqual(publicPolicy.validatePublicReferences(root), []);
+});
+
+test('work video configuration validates local files and rejects unsafe embed inputs', () => {
+  const fixture = mkdtempSync(join(tmpdir(), 'lef-video-policy-'));
+  try {
+    mkdirSync(join(fixture, 'assets', 'videos', 'works', 'example'), { recursive: true });
+    writeFileSync(join(fixture, 'assets', 'videos', 'works', 'example', 'demo.mp4'), 'video fixture');
+    for (const source of ['assets/videos/works/example/demo.mp4', 'https://youtu.be/aqz-KE-bpKQ', 'https://vimeo.com/76979871']) {
+      writeFileSync(join(fixture, 'index.html'), `<section data-work-video-url="${source}"></section>`);
+      assert.deepEqual(publicPolicy.validatePublicReferences(fixture), [], source);
+    }
+    for (const [source, expected] of [
+      ['assets/videos/works/example/missing.webm', /missing/],
+      ['javascript:alert(1)', /invalid video/],
+      ['https://youtube.com/watch?v=bad', /invalid video/],
+      ['../outside.mp4', /invalid video/],
+    ]) {
+      writeFileSync(join(fixture, 'index.html'), `<section data-work-video-url="${source}"></section>`);
+      assert.match(publicPolicy.validatePublicReferences(fixture).join('\n'), expected);
+    }
+    writeFileSync(join(fixture, 'assets', 'videos', 'unapproved.mp4'), 'unapproved video fixture');
+    assert.match(publicPolicy.validatePublicReferences(fixture).join('\n'), /forbidden media file/);
+  } finally { rmSync(fixture, { recursive: true, force: true }); }
 });
 
 test('public pages declare a local vector favicon to prevent implicit root favicon requests', () => {

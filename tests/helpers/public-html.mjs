@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { resolveWorkVideo } from '../../assets/js/work-media.js';
 
 const NON_PUBLIC_DIRECTORIES = new Set([
   '.git',
@@ -17,7 +18,8 @@ const APPROVED_MEDIA_FILES = new Set([
 function isApprovedMediaFile(file) {
   const normalized = file.replaceAll('\\', '/');
   return APPROVED_MEDIA_FILES.has(normalized)
-    || /^assets\/images\/works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif)$/i.test(normalized);
+    || /^assets\/images\/works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:png|jpe?g|webp|avif)$/i.test(normalized)
+    || /^assets\/videos\/works\/[a-z0-9-]+\/[a-z0-9-]+\.(?:mp4|webm)$/i.test(normalized);
 }
 
 function discoverPublicFiles(root) {
@@ -246,7 +248,7 @@ function* moduleReferences(source) {
 // Resolve exactly as a browser served from the GitHub Pages project subpath.
 export function validatePublicReferences(root, base = 'https://leftorenia.github.io/Lef-Lef-Portfolio-Site/') {
   const issues = [];
-  const media = /\.(?:png|jpe?g|webp|gif|avif|bmp|ico|mp3|m4a|wav|ogg|aac|flac)(?:[?#]|$)/i;
+  const media = /\.(?:png|jpe?g|webp|gif|avif|bmp|ico|mp4|webm|mp3|m4a|wav|ogg|aac|flac)(?:[?#]|$)/i;
   function check(file, reference, { navigation = false, module = false } = {}) {
     const ref = reference.trim();
     if (ref.startsWith('#')) return;
@@ -273,6 +275,12 @@ export function validatePublicReferences(root, base = 'https://leftorenia.github
     const source = readFileSync(join(root, file), 'utf8');
     if (/\.html$/i.test(file)) {
       for (const tag of htmlTags(source)) {
+        const videoUrl = tag.attributes['data-work-video-url']?.trim();
+        if (videoUrl) {
+          const video = resolveWorkVideo(videoUrl, { pageUrl: new URL(file, base).href, projectUrl: base });
+          if (!video) issues.push(`${file}: invalid video URL ${videoUrl}`);
+          else if (video.kind === 'file' && !/^[a-z][\w+.-]*:/i.test(videoUrl)) check(file, videoUrl);
+        }
         for (const [name, value] of Object.entries(tag.attributes)) {
           if (name !== 'href' && name !== 'src') continue;
           check(file, value, { navigation: tag.name === 'a' && name === 'href' });

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Work media QA fixture (not a public work)</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body>
+  <main class="page-shell">
+    <h1>動画レイアウトの検証用ページ</h1>
+    <p>公開作品ではありません。公開サンプルIDでプレーヤー構成を確認します。</p>
+    <section class="work-video-section" data-work-video-url="https://www.youtube.com/watch?v=aqz-KE-bpKQ&amp;autoplay=1" data-work-video-title="YouTubeプレーヤー検証" hidden aria-label="作品動画">
+      <p class="eyebrow">FEATURE VIDEO</p>
+      <div class="work-video-frame"></div>
+      <a class="text-link work-video-source" hidden>動画を開く ↗</a>
+    </section>
+    <section class="work-video-section" data-work-video-url="https://www.nicovideo.jp/watch/sm12345678" hidden aria-label="未対応サイトのリンク">
+      <div class="work-video-frame"></div>
+      <a class="text-link work-video-source" hidden>動画を開く ↗</a>
+    </section>
+  </main>
+  <script type="module" src="../../assets/js/work-media.js"></script>
+</body>
+</html>

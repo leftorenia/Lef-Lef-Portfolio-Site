@@ -79,6 +79,17 @@ test('Works list thumbnails share a 16:9 frame', () => {
   assert.match(css, /\.work-preview\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
 });
 
+test('detail gallery uses equal columns with uncropped 16:9 images and a full-width video frame', () => {
+  assert.match(css, /\.work-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.doesNotMatch(css, /\.work-gallery-item:first-child/);
+  const image = css.match(/\.work-gallery-item img\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(image, /aspect-ratio:\s*16\s*\/\s*9/);
+  assert.match(image, /height:\s*auto/);
+  assert.match(image, /object-fit:\s*contain/);
+  assert.match(css, /\.work-video-frame\s*\{[^}]*aspect-ratio:\s*16\s*\/\s*9/s);
+  assert.match(css, /\.work-video-section\[hidden\],[^{]*\{[^}]*display:\s*none/s);
+});
+
 test('Works page uses about ninety percent of the viewport without a fixed desktop cap', () => {
   const worksPage = css.match(/\.works-page\s*\{[^}]*\}/s)?.[0] ?? '';
   const viewportWidth = Number(worksPage.match(/width:\s*([0-9.]+)vw/)?.[1]);
