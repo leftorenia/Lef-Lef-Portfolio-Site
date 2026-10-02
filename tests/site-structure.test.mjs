@@ -41,7 +41,7 @@ test('site structure exposes exactly the approved three-page navigation', () => 
 
 test('site structure gives every main page accessible landmarks and identity', () => {
   const expectations = {
-    'index.html': ['profile', 'PROFILE — れふれふ', 'FIELD 01'],
+    'index.html': ['profile', 'PROFILE — れふれふ', null],
     'works.html': ['works', 'WORKS — れふれふ', null],
     'contact.html': ['contact', 'CONTACT — れふれふ', 'FIELD 03'],
   };
@@ -54,6 +54,30 @@ test('site structure gives every main page accessible landmarks and identity', (
     assert.equal((html.match(/<main\b[^>]*id="main-content"/g) ?? []).length, 1);
     if (field) assert.match(html, new RegExp(field));
   }
+});
+
+test('all public navigation labels have no numbering', () => {
+  for (const file of existingHtmlFiles) {
+    const nav = read(file).match(/<nav\b[^>]*class="site-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+    if (!nav) continue;
+    assert.doesNotMatch(nav, /data-index=|<span\b/, `${file}: plain navigation labels`);
+    assert.deepEqual(navLabels(read(file)), ['PROFILE', 'WORKS', 'CONTACT']);
+  }
+});
+
+test('Profile hero uses only the Japanese name and no field label', () => {
+  const hero = pages['index.html'].match(/<section class="hero"[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? '';
+  const title = hero.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? '';
+  assert.equal(renderedText(title), 'れふれふ');
+  assert.doesNotMatch(hero, /FIELD 01|class="section-index"/);
+});
+
+test('Profile about section has a single ABOUT ME heading without a repeated name', () => {
+  const heading = pages['index.html'].match(/<div class="profile-about-heading">([\s\S]*?)<\/div>/)?.[1] ?? '';
+  assert.match(heading, /<h2 id="about-title">ABOUT ME<\/h2>/);
+  assert.doesNotMatch(renderedText(heading), /れふれふ/);
+  assert.equal([...heading.matchAll(/ABOUT ME/g)].length, 1);
+  assert.match(heading, /Shader \/ VFX Artist/);
 });
 
 test('Works list heading shows only WORKS, without introductory labels or copy', () => {

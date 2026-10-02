@@ -177,7 +177,6 @@ body[data-page="contact"] .static-nebula {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   padding: 0.2rem 0 0.45rem;
   border-bottom: 1px solid transparent;
   color: var(--color-muted);
@@ -186,13 +185,6 @@ body[data-page="contact"] .static-nebula {
   letter-spacing: 0.13em;
   text-decoration: none;
   transition: color 180ms ease, border-color 180ms ease;
-}
-
-.site-nav a span::before {
-  content: attr(data-index);
-  color: var(--color-dim);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
 }
 
 .site-nav a:hover {
@@ -497,7 +489,7 @@ body[data-page="contact"] .static-nebula {
 
 .profile-section h2 {
   margin: 0;
-  font-size: clamp(2rem, 4.5vw, 4.5rem);
+  font-size: clamp(3.25rem, 6vw, 6rem);
   font-weight: 300;
   letter-spacing: -0.045em;
   line-height: 1.35;
@@ -1367,6 +1359,10 @@ body[data-page="contact"] .static-nebula {
     font-size: clamp(3.7rem, 20vw, 6rem);
   }
 
+  .profile-section h2 {
+    font-size: clamp(3.7rem, 20vw, 6rem);
+  }
+
   .works-grid {
     grid-template-columns: 1fr;
   }
@@ -1403,10 +1399,6 @@ body[data-page="contact"] .static-nebula {
   .brand-name {
     font-size: 0.875rem;
     letter-spacing: 0.16em;
-  }
-
-  .site-nav a span::before {
-    display: none;
   }
 
   .contact-dm-link {
