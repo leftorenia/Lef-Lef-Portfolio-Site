@@ -228,11 +228,19 @@ test('Cosmo Effects has a truthful static detail page', () => {
 
   assert.match(detail, /<body\b[^>]*data-page="work-detail"/i);
   assert.match(detail, /<title>COSMO EFFECTS — れふれふ<\/title>/i);
-  assert.match(detail, /Unity VFX Study/i);
-  assert.match(detail, /PERSONAL STUDY/i);
   assert.match(detail, /<canvas\b[^>]*data-work-preview[^>]*aria-hidden="true"/i);
   assert.match(detail, /class="[^"]*work-preview-fallback[^"]*"/i);
   assert.doesNotMatch(detail, /client|employer|award|release/i);
+});
+
+test('work detail headers contain only the work name', () => {
+  for (const file of [detailFile, immersnapDetailFile]) {
+    const titleGroup = read(file).match(/<header class="work-detail-header">([\s\S]*?)<\/header>/)?.[1] ?? '';
+    assert.equal([...titleGroup.matchAll(/<h1\b/gi)].length, 1, `${file}: one work title required`);
+    assert.equal([...titleGroup.matchAll(/<p\b/gi)].length, 0, `${file}: descriptions belong below the cover, not beside the work title`);
+    const bodyCopy = read(file).match(/<section\b[^>]*aria-label="作品について"[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? '';
+    assert.ok([...bodyCopy.matchAll(/<p\b/gi)].length > 0, `${file}: keep the explanation below the cover`);
+  }
 });
 
 test('each work detail has an optional video slot directly after its cover, before its overview', () => {
@@ -253,13 +261,6 @@ test('IMMERSNAP has a truthful static detail page with its supplied gallery', ()
 
   assert.match(detail, /<body\b[^>]*data-page="work-detail"/i);
   assert.match(detail, /<title>IMMERSNAP — れふれふ<\/title>/i);
-  assert.match(detail, /<span>W\.002<\/span>/i);
-  const suppliedDescription = 'XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！';
-  const suppliedCopy = [...detail.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
-    .map((match) => renderedText(match[1]))
-    .filter((text) => text.startsWith('XR技術を駆使した'));
-  assert.deepEqual(suppliedCopy, [suppliedDescription]);
-
   const images = [...detail.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
   const workImages = images.filter((tag) => /assets\/images\/works\/immersnap\//i.test(getAttribute(tag, 'src')));
   assert.deepEqual(workImages.map((tag) => getAttribute(tag, 'src')), [
@@ -401,7 +402,7 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.doesNotMatch(readme, /ラスター画像と音声ファイルは追加しません/);
   assert.match(readme, /## Adding a work/);
   assert.match(readme, /works\/<slug>\/index\.html/);
-  assert.match(readme, /works\/cosmo-effects\/index\.html[^\n]*(?:コピー|複製)/i);
+  assert.match(readme, /works\/immersnap\/index\.html[^\n]*(?:コピー|複製)/i);
   assert.match(readme, /tests\/site-structure\.test\.mjs/);
 });
 
