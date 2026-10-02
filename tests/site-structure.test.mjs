@@ -42,7 +42,7 @@ test('site structure exposes exactly the approved three-page navigation', () => 
 test('site structure gives every main page accessible landmarks and identity', () => {
   const expectations = {
     'index.html': ['profile', 'PROFILE — れふれふ', 'FIELD 01'],
-    'works.html': ['works', 'WORKS — れふれふ', 'FIELD 02'],
+    'works.html': ['works', 'WORKS — れふれふ', null],
     'contact.html': ['contact', 'CONTACT — れふれふ', 'FIELD 03'],
   };
 
@@ -52,7 +52,19 @@ test('site structure gives every main page accessible landmarks and identity', (
     assert.match(html, new RegExp(`<title>${title}<\\/title>`, 'i'));
     assert.equal((html.match(/class="skip-link"/g) ?? []).length, 1);
     assert.equal((html.match(/<main\b[^>]*id="main-content"/g) ?? []).length, 1);
-    assert.match(html, new RegExp(field));
+    if (field) assert.match(html, new RegExp(field));
+  }
+});
+
+test('Works list heading shows only WORKS, without introductory labels or copy', () => {
+  const heading = pages['works.html'].match(/<header class="page-heading">([\s\S]*?)<\/header>/)?.[1] ?? '';
+  assert.equal(renderedText(heading), 'WORKS');
+  assert.match(heading, /<h1>WORKS<\/h1>/);
+});
+
+test('all public pages omit the removed site footer', () => {
+  for (const file of existingHtmlFiles) {
+    assert.doesNotMatch(read(file), /<footer\b/i, `${file}: no bottom footer`);
   }
 });
 
