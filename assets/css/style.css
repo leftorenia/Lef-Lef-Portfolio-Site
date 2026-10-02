@@ -1045,6 +1045,11 @@ body[data-page="contact"] .static-nebula {
   margin-bottom: clamp(2.5rem, 6vw, 5rem);
 }
 
+.work-gallery-section > .work-video-section {
+  padding-top: 0;
+  margin-bottom: clamp(2.5rem, 6vw, 5rem);
+}
+
 .work-gallery-heading h2 {
   margin: 0;
   font-size: clamp(2rem, 4.8vw, 4.8rem);

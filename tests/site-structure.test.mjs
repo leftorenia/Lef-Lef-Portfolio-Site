@@ -243,16 +243,27 @@ test('work detail headers contain only the work name', () => {
   }
 });
 
-test('each work detail has an optional video slot directly after its cover, before its overview', () => {
+test('each work detail has an optional video slot after its cover', () => {
   for (const file of [detailFile, immersnapDetailFile]) {
     const detail = read(file);
     const cover = detail.indexOf('class="work-detail-visual');
     const video = detail.indexOf('class="work-video-section"');
-    const overview = detail.search(/class="work-detail-(?:grid|description)"/);
-    assert.ok(cover >= 0 && video > cover && overview > video, file);
+    assert.ok(cover >= 0 && video > cover, file);
     assert.match(detail, /data-work-video-url=""[^>]*hidden/i, 'no supplied video means no empty visible slot');
     assert.match(detail, /src="\.\.\/\.\.\/assets\/js\/work-media\.js"/);
   }
+});
+
+test('IMMERSNAP template places video after DETAILS and before the image gallery', () => {
+  const detail = read(immersnapDetailFile);
+  const description = detail.indexOf('class="work-detail-description"');
+  const details = detail.indexOf('class="work-gallery-section"');
+  const heading = detail.indexOf('<h2 id="gallery-title">DETAILS</h2>');
+  const video = detail.indexOf('class="work-video-section"');
+  const gallery = detail.indexOf('class="work-gallery"');
+  assert.ok(description >= 0 && details > description && heading > details, 'description precedes DETAILS');
+  assert.ok(video > heading && gallery > video, 'DETAILS → optional video → images');
+  assert.equal([...detail.matchAll(/data-work-video-url=/g)].length, 1, 'one video slot only');
 });
 
 test('IMMERSNAP has a truthful static detail page with its supplied gallery', () => {
