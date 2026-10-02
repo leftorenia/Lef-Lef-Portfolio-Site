@@ -43,7 +43,7 @@ test('site structure gives every main page accessible landmarks and identity', (
   const expectations = {
     'index.html': ['profile', 'PROFILE — れふれふ', null],
     'works.html': ['works', 'WORKS — れふれふ', null],
-    'contact.html': ['contact', 'CONTACT — れふれふ', 'FIELD 03'],
+    'contact.html': ['contact', 'CONTACT — れふれふ', null],
   };
 
   for (const [file, [page, title, field]] of Object.entries(expectations)) {
@@ -194,6 +194,17 @@ test('Contact directs inquiries only to the approved X profile', () => {
   const outbound = [...contact.matchAll(/<a\b[^>]*href="(https?:[^\"]+)"[^>]*>/gi)].map(match => match[1]);
   assert.deepEqual(outbound, ['https://x.com/lef_torenia_lef']);
   assert.match(contact, /XのDMからご連絡ください/);
+});
+
+test('Contact places its introduction below the title and keeps the X action in the right card', () => {
+  const contact = pages['contact.html'];
+  const heading = contact.match(/<header class="[^"]*contact-heading[^"]*">([\s\S]*?)<\/header>/)?.[1] ?? '';
+  assert.match(heading, /<h1>CONTACT<\/h1>[\s\S]*<p class="contact-intro">/);
+  assert.match(heading, /ダイレクトメッセージ/);
+  const content = contact.match(/<div class="contact-content">([\s\S]*?)<\/div>/)?.[1] ?? '';
+  assert.doesNotMatch(content, /class="contact-intro"/);
+  assert.match(content, /class="contact-dm-link"/);
+  assert.doesNotMatch(renderedText(contact), /FIELD 03|OPEN A CHANNEL|DIRECT MESSAGE/);
 });
 
 test('site structure restricts outbound links to verified destinations', () => {

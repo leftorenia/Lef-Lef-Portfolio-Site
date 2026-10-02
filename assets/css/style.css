@@ -632,8 +632,7 @@ body[data-page="contact"] .static-nebula {
   padding-inline: 0;
 }
 
-.works-page,
-.contact-page {
+.works-page {
   padding-top: clamp(4.5rem, 10vw, 9rem);
   padding-bottom: clamp(6rem, 10vw, 9rem);
 }
@@ -1117,9 +1116,14 @@ body[data-page="contact"] .static-nebula {
 
 .contact-page {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(26rem, 1.2fr);
-  align-items: end;
-  gap: clamp(4rem, 10vw, 10rem);
+  grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  align-content: center;
+  gap: clamp(3rem, 8vw, 9rem);
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100svh - var(--header-height));
+  padding-top: clamp(3rem, 6vw, 6rem);
+  padding-bottom: clamp(3rem, 6vw, 6rem);
 }
 
 .contact-heading {
@@ -1127,44 +1131,47 @@ body[data-page="contact"] .static-nebula {
   margin-bottom: 0;
 }
 
-.contact-heading .section-index {
-  margin-bottom: clamp(2.5rem, 7vh, 5rem);
-}
-
-.contact-heading .eyebrow {
-  margin-bottom: 1rem;
-}
-
 .contact-heading h1 {
-  margin-bottom: 2rem;
-  font-size: clamp(3.25rem, 6vw, 6rem);
-}
-
-.contact-cta {
-  padding: clamp(2rem, 5vw, 4rem);
-  border: 1px solid var(--color-line);
-  background: linear-gradient(145deg, rgba(8, 21, 45, 0.9), rgba(3, 8, 21, 0.82));
-  box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.18);
-}
-
-.contact-cta-label {
-  margin: 0 0 1.2rem;
-  color: var(--color-ice);
-  font-family: var(--font-mono);
-  font-size: 0.67rem;
-  letter-spacing: 0.18em;
-}
-
-.contact-cta h2 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 4rem);
+  font-size: clamp(3.25rem, 6vw, 6rem);
   font-weight: 300;
   letter-spacing: -0.045em;
   line-height: 1.35;
 }
 
-.contact-cta > p:not(.contact-cta-label) {
-  margin: 1.3rem 0 2.4rem;
+.contact-content {
+  min-width: 0;
+}
+
+.contact-intro {
+  max-width: 30rem;
+  margin: 1.5rem 0 0;
+  color: var(--color-muted);
+  line-height: 2;
+}
+
+.contact-cta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(100%, 41.5rem);
+  aspect-ratio: 2 / 1;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid var(--color-line);
+  background: linear-gradient(145deg, rgba(8, 21, 45, 0.9), rgba(3, 8, 21, 0.82));
+  box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.18);
+}
+
+.contact-cta h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 1.35;
+}
+
+.contact-cta > p {
+  margin: 1rem 0 1.75rem;
   color: var(--color-muted);
 }
 
@@ -1258,6 +1265,11 @@ body[data-page="contact"] .static-nebula {
 
   .contact-page {
     align-items: start;
+    align-content: start;
+  }
+
+  .contact-cta {
+    aspect-ratio: auto;
   }
 
   .works-grid {
@@ -1337,9 +1349,13 @@ body[data-page="contact"] .static-nebula {
     padding: 6rem 0;
   }
 
-  .works-page,
-  .contact-page {
+  .works-page {
     padding-top: 4rem;
+  }
+
+  .contact-page {
+    gap: 2.5rem;
+    padding-top: 3rem;
   }
 
   .page-heading {
@@ -1359,7 +1375,8 @@ body[data-page="contact"] .static-nebula {
     font-size: clamp(3.7rem, 20vw, 6rem);
   }
 
-  .profile-section h2 {
+  .profile-section h2,
+  .contact-heading h1 {
     font-size: clamp(3.7rem, 20vw, 6rem);
   }
 

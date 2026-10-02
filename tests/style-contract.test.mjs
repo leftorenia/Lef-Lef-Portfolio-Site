@@ -209,6 +209,23 @@ test('Contact heading fits its narrower desktop column', () => {
   assert.match(heading, /font-size:\s*clamp\(3\.25rem,\s*6vw,\s*6rem\)/);
 });
 
+test('Contact centers its About-style columns vertically while keeping their top edges aligned', () => {
+  const page = css.match(/\.contact-page\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(page, /grid-template-columns:\s*minmax\(15rem,\s*0\.7fr\)\s+minmax\(0,\s*1\.3fr\)/);
+  assert.match(page, /align-items:\s*start/);
+  assert.match(page, /align-content:\s*center/);
+  assert.match(tabletCss, /\.contact-page[^\{]*\{[^}]*grid-template-columns:\s*1fr/s);
+  assert.match(tabletCss, /\.contact-page\s*\{[^}]*align-content:\s*start/s);
+});
+
+test('Contact card has a 2:1 desktop frame and an automatic compact height', () => {
+  const card = css.match(/\.contact-cta\s*\{[^}]*\}/s)?.[0] ?? '';
+  assert.match(card, /aspect-ratio:\s*2\s*\/\s*1/);
+  assert.match(card, /width:\s*min\(100%,\s*41\.5rem\)/);
+  assert.doesNotMatch(card, /(?:^|\s)height:\s*[\d.]+(?:px|rem)/);
+  assert.match(tabletCss, /\.contact-cta\s*\{[^}]*aspect-ratio:\s*auto/s);
+});
+
 test('generated work fallbacks use lunar colors when JavaScript is unavailable', () => {
   const visuals = css.slice(css.indexOf('.work-visual {'), css.indexOf('.work-detail-grid {'));
   assert.ok(!/rgba\((?:146, 92, 255|67, 141, 255|188, 232, 255|236, 168, 255),/.test(visuals),
