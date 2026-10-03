@@ -1,0 +1,30 @@
+<!-- works.html の works-grid 内の先頭へ、このカードをコピーしてください。 -->
+<!-- 詳細ページと同じ {{SLUG}} / {{TITLE}} / 画像 / 使用技術を設定します。 -->
+<a class="work-card work-card-link" href="works/{{SLUG}}/index.html">
+  <div class="work-visual">
+    <img
+      class="work-cover"
+      src="assets/images/works/{{SLUG}}/cover.jpg"
+      width="{{COVER_WIDTH}}"
+      height="{{COVER_HEIGHT}}"
+      alt="{{COVER_ALT}}"
+      decoding="async"
+    >
+    <!-- 次の作品番号を記入。例: W.003 -->
+    <span class="work-number">{{WORK_NUMBER}}</span>
+  </div>
+  <div class="work-content">
+    <div class="work-heading">
+      <div>
+        <p class="eyebrow">{{CATEGORY}}</p>
+        <h2>{{TITLE}}</h2>
+      </div>
+      <span class="work-arrow" aria-hidden="true">↗</span>
+    </div>
+    <p class="work-description">{{SUMMARY}}</p>
+    <ul class="work-tags" aria-label="使用技術">
+      <li>{{TECHNOLOGY_1}}</li>
+      <li>{{TECHNOLOGY_2}}</li>
+    </ul>
+  </div>
+</a>

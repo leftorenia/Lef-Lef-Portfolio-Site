@@ -48,13 +48,33 @@ npm test
 
 ## Adding a work
 
-作品を追加するときは、次の順序で更新します。
+現在のIMMERSNAPと同じレイアウトを使うコピー用ファイルを用意しています。新しい詳細ページは `works/<slug>/index.html` に置きます。既存作品のHTMLを書き換える必要はありません。
 
-1. `works/immersnap/index.html` を新しい `works/<slug>/index.html` へコピーし、作品ごとの詳細ページを作ります。
-2. 掲載許可のある画像をWeb向けに最適化し、`assets/images/works/<slug>/` へ保存します。
-3. `works.html` の作品一覧の先頭へリンク付き作品カードを追加します。公開作品は新しい順で並べ、最新作が常に左上に来るようにします。
-4. タイトル、種別、説明、使用技術、メタ情報を、確認できている内容だけに更新し、`tests/site-structure.test.mjs` の作品順と詳細ページの期待値も更新します。
-5. `npm test` を実行したあとローカルプレビューを開き、一覧・詳細・戻り先のリンクと各画面幅での表示を確認します。
+- [詳細ページのテンプレート](docs/templates/work-detail.html) — ページ全体をコピーするファイル
+- [一覧カードのテンプレート](docs/templates/work-card.html) — `works.html` に貼り付けるHTML断片
+
+### Copy and replace
+
+1. 作品のフォルダー名（slug）を決めます。小文字の英数字とハイフンを使い、既存作品と重複させません。例: `new-work`。
+2. `works/new-work/` を作り、`docs/templates/work-detail.html` をその中へ `index.html` という名前でコピーします。テンプレート自体はコピー元として残してください。
+3. 掲載許可のある画像をWeb向けに最適化して、`assets/images/works/new-work/` に `cover.jpg`、`detail-01.jpg`、`detail-02.jpg` として保存します。別の名前や拡張子を使う場合はHTMLの `src` も変更します。
+4. `docs/templates/work-card.html` の内容を、`works.html` の `<section class="works-grid" aria-label="作品一覧">` の直後へ貼り付けます。新しいカードが先頭・左上になります。
+5. コピー先の詳細ページと貼り付けたカードの `{{...}}` を、下の一覧に沿ってすべて置き換えます。同じ項目は両方で同じ内容にします。
+6. 必要に応じて説明の `span`、画像の `figure`、使用技術の `li` をコピーまたは削除します。動画がある場合だけ `data-work-video-url=""` にURLを記入します。動画がなければ空欄のままで構いません。
+7. `npm test` と `git diff --check` を実行し、ローカルプレビューで一覧・詳細・戻り先のリンクと各画面幅の表示を確認します。通常の作品追加ではテストの件数や作品順を書き直す必要はありません。
+
+| 置き換える項目 | 内容 |
+| --- | --- |
+| `{{SLUG}}` | フォルダー名。上の例なら `new-work` |
+| `{{TITLE}}` / `{{CATEGORY}}` / `{{SUMMARY}}` | 作品名 / 種別 / 一覧と検索用の短い説明 |
+| `{{WORK_NUMBER}}` | 一覧の最新番号に1を加えた番号。現在の次は `W.003` |
+| `{{CATCHPHRASE_LINE_1}}` / `{{CATCHPHRASE_LINE_2}}` | 表紙の下に載せるキャッチフレーズ。1行なら `<br>` と2行目を削除 |
+| `{{DESCRIPTION_LINE_1}}` 〜 `{{DESCRIPTION_LINE_4}}` | キャッチフレーズ下の補足説明。3〜5行を目安に調整 |
+| `{{COVER_WIDTH}}` / `{{COVER_HEIGHT}}` / `{{COVER_ALT}}` | 表紙の実寸と画像の説明 |
+| `{{IMAGE_01_WIDTH}}` / `{{IMAGE_01_HEIGHT}}` / `{{IMAGE_01_ALT}}` / `{{IMAGE_01_CAPTION}}` | 1枚目の詳細画像の実寸・説明・キャプション。2枚目は `IMAGE_02_...` |
+| `{{TECHNOLOGY_1}}` / `{{TECHNOLOGY_2}}` | 使用技術。一覧と詳細の `li` を同じ内容で追加・削除 |
+
+`{{...}}` は自動変換される変数ではなく、手動で置き換える目印です。コピー元には残し、公開するHTMLには残さないでください。実寸は数値のみ（例: `1920`）、説明やタイトルに `&`・`<`・`"` を含める場合は、それぞれ `&amp;`・`&lt;`・`&quot;` と記入します。
 
 作品情報は静的HTMLへ記述し、JavaScriptやCanvasが利用できない場合もタイトル、説明、技術情報を読める状態を維持します。
 
@@ -62,7 +82,7 @@ npm test
 
 ### Detail images and video
 
-画像欄の見出しは作品の種類によらず `DETAILS` を使い、小さな英字ラベルは付けません。IMMERSNAPのページをコピーする際も、この見出しはそのまま使用できます。
+画像欄の見出しは作品の種類によらず `DETAILS` を使い、小さな英字ラベルは付けません。テンプレートでも、この見出しはそのまま使用できます。
 
 表紙の下に掲載する画像は `.work-gallery` 内の `.work-gallery-item` に追加します。すべて同じ幅の2列組みで、719px以下では1列になります。画像は16:9のフレーム内に `object-fit: contain` で収めるため、元の比率が異なる場合も切り抜き・引き伸ばしをせず、余白で調整します。HTMLの `width` / `height` は画像の実寸を記載してください。
 

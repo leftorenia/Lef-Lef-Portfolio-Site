@@ -362,20 +362,38 @@ test('Works lists only published projects with the newest project first', () => 
     /<a\b[^>]*class="[^"]*\bwork-card\b[^"]*"[^>]*>[\s\S]*?<\/a>/gi,
   )].map((match) => match[0]);
 
-  assert.equal(cards.length, 2);
-  assert.deepEqual(cards.map((card) => getAttribute(card.match(/<a\b[^>]*>/i)?.[0] ?? '', 'href')), [
-    'works/immersnap/index.html',
-    'works/cosmo-effects/index.html',
-  ]);
-  assert.match(cards[0], /W\.002[\s\S]*IMMERSNAP/i);
-  assert.match(cards[0], /assets\/images\/works\/immersnap\/cover\.jpg/i);
-  const newestDescription = cards[0].match(/<p\b[^>]*class="[^"]*\bwork-description\b[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? '';
+  assert.ok(cards.length >= 2);
+  const destinations = cards.map((card) => getAttribute(card.match(/<a\b[^>]*>/i)?.[0] ?? '', 'href'));
+  assert.equal(new Set(destinations).size, cards.length, 'one card per published work');
+  const numbers = cards.map((card) => {
+    const number = card.match(/<span class="work-number">W\.(\d+)<\/span>/)?.[1];
+    assert.ok(number && Number(number) > 0, 'every work has a positive publication number');
+    return Number(number);
+  });
+  for (const [index, destination] of destinations.entries()) {
+    assert.match(destination, /^works\/[a-z0-9-]+\/index\.html$/);
+    assert.ok(existsSync(join(root, destination)), `missing published work: ${destination}`);
+    if (index > 0) assert.ok(numbers[index - 1] > numbers[index], 'newest publication first');
+  }
+  const immersnapIndex = destinations.indexOf('works/immersnap/index.html');
+  const cosmoIndex = destinations.indexOf('works/cosmo-effects/index.html');
+  assert.ok(immersnapIndex >= 0 && cosmoIndex > immersnapIndex);
+  const immersnap = cards[immersnapIndex];
+  assert.match(immersnap, /W\.002[\s\S]*IMMERSNAP/i);
+  assert.match(immersnap, /assets\/images\/works\/immersnap\/cover\.jpg/i);
+  const description = immersnap.match(/<p\b[^>]*class="[^"]*\bwork-description\b[^"]*"[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? '';
   assert.equal(
-    renderedText(newestDescription),
+    renderedText(description),
     'XR技術を駆使した、新たな撮影体験。写真を撮るだけじゃない、新しい思い出の残し方を体験しよう！',
   );
-  assert.match(cards[1], /W\.001[\s\S]*COSMO EFFECTS/i);
+  assert.match(cards[cosmoIndex], /W\.001[\s\S]*COSMO EFFECTS/i);
   assert.doesNotMatch(works, /COMING SOON|data-work-status="coming-soon"|coming-soon-card/i);
+});
+
+test('public pages have no unfilled work-template fields', () => {
+  for (const file of existingHtmlFiles) {
+    assert.doesNotMatch(read(file), /\{\{[A-Z0-9_]+\}\}/, `replace all template fields in ${file}`);
+  }
 });
 
 test('repository policy keeps approved avatar, platform logos, and work imagery local', () => {
@@ -460,8 +478,9 @@ test('repository policy documents preview, verification, motion, and image rules
   assert.doesNotMatch(readme, /ラスター画像と音声ファイルは追加しません/);
   assert.match(readme, /## Adding a work/);
   assert.match(readme, /works\/<slug>\/index\.html/);
-  assert.match(readme, /works\/immersnap\/index\.html[^\n]*(?:コピー|複製)/i);
-  assert.match(readme, /tests\/site-structure\.test\.mjs/);
+  assert.match(readme, /docs\/templates\/work-detail\.html/);
+  assert.match(readme, /docs\/templates\/work-card\.html/);
+  assert.match(readme, /件数や作品順を書き直す必要はありません/);
 });
 
 test('recursive public references stay inside the GitHub Pages project and resolve locally', () => {
